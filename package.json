@@ -1,0 +1,28 @@
+{
+  "name": "ideablock-cli",
+  "version": "0.0.1",
+  "description": "IdeaBlock CLI client",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emsheets/ideablock-cli.git"
+  },
+  "keywords": [
+    "patents",
+    "ip",
+    "ideablock",
+    "bitcoin"
+  ],
+  "author": "IdeaBlock",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/emsheets/ideablock-cli/issues"
+  },
+  "homepage": "https://ideablock.io",
+  "dependencies": {
+    "inquirer": "^6.4.1"
+  }
+}
