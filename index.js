@@ -20,10 +20,9 @@ const fs = require('fs') // this might not be needed, I think node made this to 
 const async = require('async')
 let thumbArray = []
 let ideaJSON = {}
-let parentPool = []
+//let parentPool = []
 // Create IdeaBlock Directory
 shell.mkdir('.idea')
-
 
 /*
 ✓ "ideaName" : string,
@@ -51,12 +50,12 @@ const questions = [
   },
 
   // Parent Idea(s) - need to finish this after getting details on endpoint/return from Adam
-  {
-    type: 'checkbox',
-    name: 'parent',
-    message: 'Parent Idea(s)? (You can select multiple parent ideas)',
-    choices:
-  },
+ //{
+ //   type: 'checkbox',
+ //   name: 'parent',
+ //   message: 'Parent Idea(s)? (You can select multiple parent ideas)',
+ //   choices: [ ]
+ // },
   // Thumbnail
   {
     type: 'checkbox',
@@ -107,7 +106,7 @@ function copyFiles (callback) {
       } else {
         fs.copyFile(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
           console.log(path.join(__dirname, '.idea', file) + 'written to .idea dir')
-          if (fileArray.push(file) = files.length-1) {
+          if (fileArray.push(file) == files.length-1) {
             listImageFiles(fileArray)
             callback(fileArray)
           }
@@ -172,19 +171,12 @@ function listImageFiles (fileArray) {
   }
 }
 
-
-async.series([/*login, getParentPool*/copyFiles, interaction, ideaZip, hashFile])
-
-{
-  ideaJSON.title = answers.title
-  ideaJSON.description = answers.description
-  ideaJSON.thumb = answers.thumb
-  ideaJSON.parent = answers.parent
-  ideaJSON.tags = answers.tags
-  console.log(ideaJSON)
-  fs.writeFile('idea.txt', ideaJSON, function(err) {
-  console.log(err)
-  console.log(answers)
-  })
+function getParentPool() {
 
 }
+
+function login() {
+
+}
+
+async.series([/*login, getParentPool,*/copyFiles, interaction, ideaZip, hashFile])
