@@ -18,8 +18,13 @@ const zipper = require('zip-local')
 const crypto = require('crypto') // encryption
 const fs = require('fs') // this might not be needed, I think node made this to ship w/ latest LTS but will check
 const async = require('async')
+const fetch = require('node-fetch')
+const FormData = require('form-data')
+const publicURL = 'https://134.209.35.210/cli/create-idea'
+const privateURL = 'https://134.209.35.210/cli/create-idea-silent'
 let thumbArray = []
 let ideaJSON = {}
+let ideaFile = ''
 //let parentPool = []
 // Create IdeaBlock Directory
 shell.mkdir('.idea')
@@ -106,8 +111,15 @@ function copyFiles (callback) {
       } else {
         fs.copyFile(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
           console.log(path.join(__dirname, '.idea', file) + ' written to .idea dir')
-          if (fileArray.push(file) == files.length-1) {
-            listImageFiles(fileArray)
+        if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg') || file.includes('.tiff')){  
+          thumbArray.push(file)
+        }
+          i = i + 1
+          console.log('i = ' + i + "; files.length = " + files.length)
+          fileArray.push(file)
+          if (i == files.length) {
+            console.log("File Array: " + fileArray)
+            console.log("Thumb Array " + thumbArray)
             callback(null, fileArray)
           }
         })
@@ -118,17 +130,18 @@ function copyFiles (callback) {
 
 // Zip array of files
 function ideaZip (callback) {
-  let date = new Date()
+  let date = Math.floor(new Date() / 1000)
   let ideaFileName = 'IdeaFile-' + date + '.zip'
-  zipper.sync.zip('./.idea/').compress().save(ideaFileName)
+  zipper.sync.zip(path.join(__dirname, '.idea')).compress().save(path.join(__dirname, '.idea', ideaFileName))
+  ideaFile = ideaFileName
   console.log(ideaFileName + ' written')
   callback(null,ideaFileName)
 }
 
 // Hash Idea File
-function hashFile (ideaFileName, callback) {
+function hashFile (callback) {
   var shasum = crypto.createHash('sha256')
-  var s = fs.ReadStream(path.join(__dirname, '.idea', ideaFileName))
+  var s = fs.ReadStream(path.join(__dirname, '.idea', ideaFile))
   s.on('data', function (d) {shasum.update(d)})
   s.on('end', function () {
     var hash = shasum.digest('hex')
@@ -137,7 +150,7 @@ function hashFile (ideaFileName, callback) {
   })
 }
 
-function interaction (files) {
+function interaction (callback) {
   inquirer.prompt(questions)
     .then(answers => {
       {
@@ -151,37 +164,51 @@ function interaction (files) {
     })
 }
 
-function listImageFiles (fileArray) {
-  var fileImageArray = []
-  var i = 0
-  for (file in fileArray) {
-    if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg') || file.includes('.tiff')) {
-      fileImageArray.push(file)
-      i = i + 1
-      if (i == filesArray.length - 1) {
-        thumbArray = fileImageArray
-      }
-      else {
-        i = i + 1
-      }
+
+
+function sendOut(ideaJSON) {
+  if (ideaJSON.publication[0] == 'Public') {
+    const ideaFileInput = path.join(__dirname, '.idea', ideaJSON.ideaFileName)
+    const formData = new FormData()
+    formData.append('file', fs.createReadStream(ideaFileInput))
+    formData.append('data', ideaJSON)
+    const options = {
+      method: 'POST',
+      body: formData
     }
+    fetch(publicURL, options)
+  }
+  else{
+    let formData = new FormData()
+    formData.append(ideaJSON)
+    const options = {
+      method: 'POST',
+      body: formData
+    }
+    fetch(privateURL, options).then(res => console.log('IdeaBlock server responsed with: ' + res))
   }
 }
 
+//ADD THESE
+/*
 function getParentPool() {
 
 }
 
 function login() {
 
-}
+}*/
+
+
 
 async.series([/*login, getParentPool,*/copyFiles, interaction, ideaZip, hashFile], 
   function(err, results) {
-      // results is now equal to [fileArray, ideaJSON, ideaFileName, hash]
+    // results is now = [fileArray, ideaJSON, ideaFileName, hash]
     ideaJSON = results[1]
     ideaJSON.files = results [0]
     ideaJSON.hash = results[3]
-    //add token to ideaJSON
+    ideaJSON.ideaFileName = results[2]
+    //TODO: add user auth token to ideaJSON
+    console.log(ideaJSON)
     sendOut(ideaJSON)
   })
