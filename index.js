@@ -101,14 +101,14 @@ function copyFiles (callback) {
         i = i+1
         console.log(file + " skipped")
         if (i == files.length-1) {
-          callback(fileArray)
+          callback(null, fileArray)
         }
       } else {
         fs.copyFile(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
-          console.log(path.join(__dirname, '.idea', file) + 'written to .idea dir')
+          console.log(path.join(__dirname, '.idea', file) + ' written to .idea dir')
           if (fileArray.push(file) == files.length-1) {
             listImageFiles(fileArray)
-            callback(fileArray)
+            callback(null, fileArray)
           }
         })
       }
@@ -122,7 +122,7 @@ function ideaZip (callback) {
   let ideaFileName = 'IdeaFile-' + date + '.zip'
   zipper.sync.zip('./.idea/').compress().save(ideaFileName)
   console.log(ideaFileName + ' written')
-  callback(ideaFileName)
+  callback(null,ideaFileName)
 }
 
 // Hash Idea File
@@ -133,7 +133,7 @@ function hashFile (ideaFileName, callback) {
   s.on('end', function () {
     var hash = shasum.digest('hex')
     console.log(hash)
-    callback(hash)
+    callback(null, hash)
   })
 }
 
@@ -141,13 +141,10 @@ function interaction (files) {
   inquirer.prompt(questions)
     .then(answers => {
       {
-        ideaJSON.title = answers.title
-        ideaJSON.description = answers.description
-        ideaJSON.thumb = answers.thumb
-        ideaJSON.parent = answers.parent
-        ideaJSON.tags = answers.tags
+        ideaJSON = answers
         console.log(ideaJSON)
         fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), ideaJSON, function(err) {
+          callback(null, ideaJSON)
         })
 
       }
@@ -179,4 +176,12 @@ function login() {
 
 }
 
-async.series([/*login, getParentPool,*/copyFiles, interaction, ideaZip, hashFile])
+async.series([/*login, getParentPool,*/copyFiles, interaction, ideaZip, hashFile], 
+  function(err, results) {
+      // results is now equal to [fileArray, ideaJSON, ideaFileName, hash]
+    ideaJSON = results[1]
+    ideaJSON.files = results [0]
+    ideaJSON.hash = results[3]
+    //add token to ideaJSON
+    sendOut(ideaJSON)
+  })
