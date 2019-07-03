@@ -20,5 +20,5 @@ IdeaBlock CLI bundles the current version of all files in the current working di
 
 Inside the directory in which an idea's files are stored, open your terminal and run:
 ```bash
-$ npm run idea
+$ excutable goes here
 ```
