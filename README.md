@@ -1,6 +1,6 @@
 ![](https://i.imgur.com/G07I9tF.png)
 
-# Command-line version of IdeaBlock for git-like idea push in workflows.
+Command-line version of IdeaBlock for git-like idea push in workflows.
 
 Table of Contents
 -----------------
