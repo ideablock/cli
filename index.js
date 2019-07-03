@@ -22,12 +22,43 @@ const fetch = require('node-fetch')
 const FormData = require('form-data')
 const publicURL = 'https://134.209.35.210/cli/create-idea'
 const privateURL = 'https://134.209.35.210/cli/create-idea-silent'
+const tokenURL = 'https://ideablock.io/cli/update-token'
+const os = require('os') 
+
+const auth = require('./auth.js') 
+
 let thumbArray = []
 let ideaJSON = {}
 let ideaFile = ''
+
 //let parentPool = []
 // Create IdeaBlock Directory
-shell.mkdir('.idea')
+const print = (param) => { 
+  console.log(param) 
+}
+
+if(process.argv.slice(2) != "") {
+   if(process.argv.slice(2) == "--update-token") {
+      const loginQuestions = [
+        {
+          type: 'input', 
+          name: 'email', 
+          message: 'Email: '
+        }, 
+        {
+          type: 'input', 
+          name: 'password', 
+          message: 'Password: ' 
+        }
+      ]
+      inquirer.prompt(loginQuestions).then(answers => {
+        new auth(answers.email, answers.password) 
+        return
+      })
+   }
+} else {
+
+shell.mkdir('.idea') 
 
 /*
 ✓ "ideaName" : string,
@@ -39,8 +70,28 @@ shell.mkdir('.idea')
   "csrf_token" : string,
   "parentIdeas" : []string
 */
+var token 
+var authContents = fs.readFileSync(os.homedir()+'/.ideablock/auth.json') 
+var jsonAuthContents = JSON.parse(authContents) 
+print(jsonAuthContents.auth) 
 
-const questions = [
+const parentIdeas = () => {
+  return fetch('https://ideablock.io/cli/get-parent-ideas', {method: "post", body: {"api_token":jsonAuthContents.auth}}).then(res => res.json())
+}
+
+
+parentIdeas().then(function(result) {
+print(result.ideas) 
+
+var choice_array = [] 
+result.ideas.forEach(function(idea) {
+  choice_array.push({
+    name: idea.id + "- " +idea.title, 
+    value: idea.id
+  })
+})  
+
+var questions = [
   // Idea Title
   {
     type: 'input',
@@ -52,8 +103,15 @@ const questions = [
     type: 'input',
     name: 'description',
     message: 'Additional Description?'
+  }, 
+  {
+    type: 'checkbox',
+    message: 'Select any parent ideas you wish you use.',
+    name: 'parentIdeas',
+    choices: 
+      choice_array
+    
   },
-
   // Parent Idea(s) - need to finish this after getting details on endpoint/return from Adam
  //{
  //   type: 'checkbox',
@@ -62,6 +120,7 @@ const questions = [
  //   choices: [ ]
  // },
   // Thumbnail
+  
   {
     type: 'checkbox',
     name: 'thumb',
@@ -171,7 +230,9 @@ function sendOut(ideaJSON) {
     const ideaFileInput = path.join(__dirname, '.idea', ideaJSON.ideaFileName)
     const formData = new FormData()
     formData.append('file', fs.createReadStream(ideaFileInput))
-    formData.append('data', ideaJSON)
+    for(ideaJson_part in ideaJSON) {
+      formData.append(ideaJson_part, ideaJSON[ideaJson_part])
+    }
     const options = {
       method: 'POST',
       body: formData
@@ -185,7 +246,7 @@ function sendOut(ideaJSON) {
       method: 'POST',
       body: formData
     }
-    fetch(privateURL, options).then(res => console.log('IdeaBlock server responsed with: ' + res))
+    fetch('http://app.ideablock.kek/cli/create-idea', options).then(res => console.log('IdeaBlock server responsed with: ' + res))
   }
 }
 
@@ -212,3 +273,7 @@ async.series([/*login, getParentPool,*/copyFiles, interaction, ideaZip, hashFile
     console.log(ideaJSON)
     sendOut(ideaJSON)
   })
+
+}) 
+
+} 
