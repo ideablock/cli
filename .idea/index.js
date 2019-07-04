@@ -20,8 +20,8 @@ const fs = require('fs') // this might not be needed, I think node made this to 
 const async = require('async')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
-const publicURL = 'https://134.209.35.210/cli/create-idea'
-const privateURL = 'https://134.209.35.210/cli/create-idea-silent'
+const publicURL = 'http://app.ideablock.kek/cli/create-idea'
+const privateURL = 'http://app.ideablock.kek/cli/create-idea-silent'
 const tokenURL = 'http://app.ideablock.kek/cli/update-token'
 const os = require('os') 
 
@@ -120,7 +120,6 @@ var questions = [
  //   choices: [ ]
  // },
   // Thumbnail
-  
   {
     type: 'checkbox',
     name: 'thumb',
@@ -215,7 +214,7 @@ function interaction (callback) {
       {
         ideaJSON = answers
         console.log(ideaJSON)
-        fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), ideaJSON, function(err) {
+        fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), JSON.stringify(ideaJSON) , function(err) {
           callback(null, ideaJSON)
         })
 
@@ -228,23 +227,28 @@ function interaction (callback) {
 function sendOut(ideaJSON) {
   if (ideaJSON.publication[0] == 'Public') {
     const ideaFileInput = path.join(__dirname, '.idea', ideaJSON.ideaFileName)
+    print(ideaFileInput) 
     const formData = new FormData()
     formData.append('file', fs.createReadStream(ideaFileInput))
-    formData.append('data', ideaJSON)
+    for(ideaJson_part in ideaJSON) {
+      formData.append(ideaJson_part, JSON.stringify(ideaJSON[ideaJson_part])) 
+    }
     const options = {
       method: 'POST',
       body: formData
     }
-    fetch(publicURL, options)
+    fetch('http://app.ideablock.kek/cli/create-idea', options).then(res => res.json()).then(json => print('Ideablock server responsed with: ' + json)) 
   }
   else{
     let formData = new FormData()
-    formData.append(ideaJSON)
+    for(ideaJson_part in ideaJSON) {
+      formData.append(ideaJson_part, JSON.stringify(ideaJSON[ideaJson_part])) 
+    }
     const options = {
       method: 'POST',
       body: formData
     }
-    fetch('http://app.ideablock.kek/cli/create-idea', options).then(res => console.log('IdeaBlock server responsed with: ' + res))
+    fetch('http://app.ideablock.kek/cli/create-idea', options).then(res => res.json()).then(json => print('Ideablock server responded with: ' + json)) 
   }
 }
 
