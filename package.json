@@ -31,7 +31,6 @@
     "form-data": "^2.4.0",
     "fs": "0.0.1-security",
     "inquirer": "^6.4.1",
-    "jszip": "^3.2.1",
     "node-fetch": "^2.6.0",
     "path": "^0.12.7",
     "shelljs": "^0.8.3",
