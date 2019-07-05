@@ -1,1 +1,1 @@
-{"title":"asdf","description":"asdf","parentIdeas":[],"thumb":[],"tags":"","publication":["Public"]}
+[object Object]
