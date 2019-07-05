@@ -202,6 +202,7 @@ function sendOut (ideaJSON) {
     //formData.append('thumb', ideaJSON.thumb)
     formData.append('tags', ideaJSON.tags)
     formData.append('publication', ideaJSON.publication[0])
+    formData.append('api_token', jsonAuthContents.auth) 
     const options = {
       method: 'POST',
       body: formData
@@ -209,7 +210,7 @@ function sendOut (ideaJSON) {
     fetch(publicURL, options)
   } else {
     let formData = new FormData()
-    formData.append(ideaJSON)
+    formData.append(ideaJSON) 
     const options = {
       method: 'POST',
       body: formData
