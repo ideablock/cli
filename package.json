@@ -3,9 +3,10 @@
   "version": "0.0.1",
   "description": "IdeaBlock CLI client",
   "main": "index.js",
-  "scripts": {
-    "test": "test"
-  },
+"scripts": {
+    "start": "node index.js",
+    "test": "npm test"
+  }
   "repository": {
     "type": "git",
     "url": "git+https://github.com/emsheets/ideablock-cli.git"
