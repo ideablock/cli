@@ -6,6 +6,8 @@ const fetch = require('node-fetch')
 const FormData = require('form-data')
 const fs = require('fs')
 
+
+
 class Auth {
   constructor (email, password) {
     const formData = new FormData()
@@ -26,7 +28,7 @@ class Auth {
     const fileLoc = path.join(os.homedir(), '/.ideablock', 'auth.json')
     fs.open(fileLoc, err => {
       if (err) console.log(err)
-      const jsonWriteData = { 'auth': token }
+      const jsonWriteData = { token }
       fs.mkdir(os.homedir() + '/.ideablock', err => {
         if (err) console.log(err)
       })
