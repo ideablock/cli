@@ -22,9 +22,9 @@ const fetch = require('node-fetch')
 const FormData = require('form-data')
 const os = require('os')
 const Auth = require('./auth.js')
-const publicURL = 'https://beta.ideablock.io/cli/create-idea'
-const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
-const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
+const publicURL = 'http://app.ideablock.kek/cli/create-idea'
+const privateURL = 'http://app.ideablock.kek/cli/create-idea-silent'
+const parentURL = 'http://app.ideablock.kek/cli/get-parent-ideas'
 const SortedSet = require('collections/sorted-set')
 let thumbArray = []
 let parentArray = []
@@ -172,7 +172,7 @@ function copyFiles (callback) {
       } else {
         fs.copyFile(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
           if (err) console.log(err)
-          if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg') || file.includes('.tiff')) {
+          if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg')) {
             thumbArray.push(file)
           }
           i = i + 1
@@ -215,13 +215,17 @@ function interaction (callback) {
       if (answers.publication[0] === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
+
             let ideaJSON = {
               'title': answersPublic.title,
               'description': answersPublic.description,
               'tags': answersPublic.tags,
+              'thumb':answersPublic.thumb || 'none',
               'parents': answersPublic.parents,
               'publication': 'public'
             }
+
+
             fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), JSON.stringify(ideaJSON), function (err) {
               if (err) console.log(err)
               callback(null, ideaJSON)
@@ -237,8 +241,15 @@ function interaction (callback) {
               'description': answersPrivate.description,
               'tags': answersPrivate.tags,
               'parents': answersPrivate.parents,
-              'publication': 'private'
+              'publication': 'private',
+                'thumb':answersPrivate.thumb || 'none',
+            }
 
+
+            if(answersPublic.thumb == undefined) {
+              ideaJSON.thumb = ''
+            } else {
+              ideaJSON.thumb = answersPublic.thumb
             }
             fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), ideaJSON, function (err) {
               if (err) console.log(err)
@@ -251,31 +262,35 @@ function interaction (callback) {
 
 function sendOut (resultsJSON) {
   console.log('send out JSON: ' + JSON.stringify(resultsJSON))
+
   if (resultsJSON.publication === 'public') {
     const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
     //const thumbFileInput = path.join(__dirname, '.idea', resultsJSON.thumb)
     let formData = new FormData()
+
     formData.append('file', fs.createReadStream(ideaFileInput))
-   // formData.append('thumb', fs.createReadStream(thumbFileInput))
+    formData.append('thumb', resultsJSON.thumb.join())
     formData.append('title', resultsJSON.title)
     formData.append('description', resultsJSON.description)
     formData.append('hash', resultsJSON.hash)
-    // formData.append('parents', resultsJSON.parents)
-    // formData.append('tags', resultsJSON.tags)
+    formData.append('parents', resultsJSON.parents.join())
+    formData.append('tags', resultsJSON.tags)
     formData.append('api_token', resultsJSON.api_token)
     const options = {
       method: 'POST',
       body: formData
     }
-    fetch(publicURL, options)
+    fetch(publicURL, options).then(
+      res => res.json()).then(json => console.log(json))
+
   } else {
     let formData = new FormData()
     formData.append('title', resultsJSON.title)
     formData.append('description', resultsJSON.description)
     formData.append('hash', resultsJSON.hash)
-    formData.append('parents', resultsJSON.parents)
+    formData.append('parents', resultsJSON.parents.join())
     formData.append('tags', resultsJSON.tags)
-    formData.append('thumb', resultsJSON.thumb)
+    formData.append('thumb', resultsJSON.thumb.join())
     formData.append('api_token', resultsJSON.api_token)
     const options = {
       method: 'POST',
@@ -338,8 +353,10 @@ async.series([dotIdea, authorize, parents, interaction, copyFiles, ideaZip, hash
     resultsJSON.ideaFileName = results[5]
     resultsJSON.publication = interaction.publication
     resultsJSON.title = interaction.title
+    resultsJSON.thumb = interaction.thumb
     resultsJSON.description = interaction.description
-    // resultsJSON.parents = parentConvert(interaction.parents)
+    resultsJSON.parents = interaction.parents
+    resultsJSON.tags = interaction.tags
     resultsJSON.api_token = results[1].auth
     console.log('resultsJSON: ' + JSON.stringify(resultsJSON))
     sendOut(resultsJSON)
