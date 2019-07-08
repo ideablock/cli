@@ -9,7 +9,7 @@ Table of Contents
 - [Usage](#usage)
 
 # Prerequisites
-- [Sign up](https://beta.ideablock.io) for an IdeaBlock Beta account
+- [Register](https://beta.ideablock.io) for a free IdeaBlock Beta account
 - Install [NodeJS and npm](https://nodejs.org/en/download/)
 
 # Download
