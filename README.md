@@ -4,12 +4,14 @@ Command-line version of IdeaBlock for git-like idea push in workflows.
 
 Table of Contents
 -----------------
-
+- [Prerequisites](#prerequisites)
 - [Download](#download)
 - [Usage](#usage)
 
+# Prerequisites
+[NodeJS and npm](https://nodejs.org/en/download/)
+
 # Download
-Prerequisites: NodeJS and npm
 Install ideablock-cli globally using npm:
 ```bash
 $ npm i -g ideablock-cli
@@ -20,5 +22,5 @@ IdeaBlock CLI bundles the current version of all files in the current working di
 
 Inside the directory in which an idea's files are stored, open your terminal and run:
 ```bash
-$ executable goes here
+$ ideablock-cli
 ```
