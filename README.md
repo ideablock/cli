@@ -2,12 +2,6 @@
 
 Command-line version of IdeaBlock for git-like idea push in workflows.
 
-Table of Contents
------------------
-- [Prerequisites](#prerequisites)
-- [Download](#download)
-- [Usage](#usage)
-
 # Prerequisites
 - [Register](https://beta.ideablock.io) for a free IdeaBlock Beta account
 - Install [NodeJS and npm](https://nodejs.org/en/download/)
