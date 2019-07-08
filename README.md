@@ -9,7 +9,8 @@ Table of Contents
 - [Usage](#usage)
 
 # Prerequisites
-[NodeJS and npm](https://nodejs.org/en/download/)
+- [Sign up](https://beta.ideablock.io) for an IdeaBlock Beta account
+- Install [NodeJS and npm](https://nodejs.org/en/download/)
 
 # Download
 Install ideablock-cli globally using npm:
