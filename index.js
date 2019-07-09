@@ -308,7 +308,7 @@ function banner () {
   log(chalk.bold.gray("\n\n  WELCOME TO...\n\n  ========================================"))
   log(chalk.bold.gray("||                                        ||\n||") + chalk.bold.rgb(107, 200, 202)("  ###   #         ") + chalk.bold.rgb(65, 90, 166)("##   #          #  ") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  ### ###  ## ") + chalk.bold.rgb(65, 90, 166)("# #  #  ### ### # #") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  # # ##  # # ") + chalk.bold.rgb(65, 90, 166)("##   #  # # #   ## ") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  ### ### ### ") + chalk.bold.rgb(65, 90, 166)("# #  ## ### ### # #") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)("###             ") + chalk.bold.rgb(65, 90, 166)("##     ") + chalk.bold.rgb(255, 216, 100)("_") + chalk.bold.gray("              ||"))
   log(chalk.bold.gray("||  ") + chalk.bold.rgb(255, 216, 100)("                      \/ `  \/   \/") + chalk.bold.gray("      ||\n||") + chalk.bold.rgb(255, 216, 100)("                       \/_,  \/_, \/     ") + chalk.bold.gray("  ||"))
-  log(chalk.bold.gray("  ========================================\n"))
+  log(chalk.bold.gray("||                                        ||\n  ========================================\n\n"))
 }
 
 // Execution
