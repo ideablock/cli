@@ -21,16 +21,16 @@ const async = require('async')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
 const os = require('os')
+const chalk = require('chalk')
 const Auth = require('./auth.js')
-const publicURL = 'http://app.ideablock.kek/cli/create-idea'
-const privateURL = 'http://app.ideablock.kek/cli/create-idea-silent'
-const parentURL = 'http://app.ideablock.kek/cli/get-parent-ideas'
-const SortedSet = require('collections/sorted-set')
-let thumbArray = []
+const publicURL = 'https://beta.ideablock.io/cli/create-idea'
+const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
+const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
+const log = console.log
 let parentArray = []
 let jsonAuthContents = {}
 let ideaFile = ''
-
+let tArray = []
 let question = [
   // Public or Private
   {
@@ -108,13 +108,11 @@ let questionsPublic = [
     type: 'checkbox',
     name: 'thumb',
     message: 'Please select a thumbnail file from the list of idea files (or select none for default thumbnail)',
-    choices: thumbArray
+    choices: tArray
   }
 ]
 
 // Subroutines
-// Copy all files into .idea directory (assumes flat structure, use recursion as upgrade)
-
 function authorize (callback) {
   if (!fs.existsSync(path.join(os.homedir(), '.ideablock', 'auth.json'))) {
     const loginQuestions = [
@@ -136,7 +134,6 @@ function authorize (callback) {
   } else {
     var authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
     jsonAuthContents = JSON.parse(authContents)
-    print(jsonAuthContents.auth)
     callback(null, jsonAuthContents)
   }
 }
@@ -147,7 +144,6 @@ function parents (callback) {
   fetch(parentURL, {method: 'post', body: fD})
     .then(res => res.json())
     .then(function (json) {
-      console.log(json)
       json.ideas.forEach(function (elem) {
         parentArray.push({name: elem.id + ' - ' + elem.title, value: elem.id})
       })
@@ -165,7 +161,6 @@ function copyFiles (callback) {
     files.forEach(function (file) {
       if (file.charAt(0) === '.' || fs.lstatSync(path.join(__dirname, file)).isDirectory()) {
         i = i + 1
-        console.log(file + ' skipped')
         if (i === files.length - 1) {
           callback(null, fileArray)
         }
@@ -173,13 +168,14 @@ function copyFiles (callback) {
         fs.copyFile(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
           if (err) console.log(err)
           if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg')) {
-            thumbArray.push(file)
+            tArray.push(file)
           }
           i = i + 1
           fileArray.push(file)
           if (i === files.length) {
-            console.log('File Array: ' + fileArray)
-            console.log('Thumb Array ' + thumbArray)
+            if (!fs.existsSync(path.join(os.homedir(), '.ideablock', '.ideas'))) {
+              shell.mkdir(path.join(os.homedir(), '.ideablock', '.ideas'))
+            }
             callback(null, fileArray)
           }
         })
@@ -204,28 +200,27 @@ function hashFile (callback) {
   s.on('data', function (d) { shasum.update(d) })
   s.on('end', function () {
     var hash = shasum.digest('hex')
-    console.log(hash)
     callback(null, hash)
   })
 }
 
 function interaction (callback) {
+  banner()
+  let aPublic = {}
   inquirer.prompt(question)
     .then(answers => {
       if (answers.publication[0] === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
-
+            aPublic = answersPublic
             let ideaJSON = {
               'title': answersPublic.title,
               'description': answersPublic.description,
               'tags': answersPublic.tags,
-              'thumb':answersPublic.thumb || 'none',
+              'thumb': answersPublic.thumb || 'none',
               'parents': answersPublic.parents,
               'publication': 'public'
             }
-
-
             fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), JSON.stringify(ideaJSON), function (err) {
               if (err) console.log(err)
               callback(null, ideaJSON)
@@ -233,7 +228,6 @@ function interaction (callback) {
           })
           .catch(err => console.log(err))
       } else {
-        console.log('HELLO THERE PRIVATE')
         inquirer.prompt(questionsPrivate)
           .then(answersPrivate => {
             let ideaJSON = {
@@ -242,14 +236,12 @@ function interaction (callback) {
               'tags': answersPrivate.tags,
               'parents': answersPrivate.parents,
               'publication': 'private',
-                'thumb':answersPrivate.thumb || 'none',
+              'thumb': answersPrivate.thumb || 'none'
             }
-
-
-            if(answersPublic.thumb == undefined) {
+            if (aPublic.thumb === undefined) {
               ideaJSON.thumb = ''
             } else {
-              ideaJSON.thumb = answersPublic.thumb
+              ideaJSON.thumb = aPublic.thumb
             }
             fs.writeFile(path.join(__dirname, '.idea', 'idea.txt'), ideaJSON, function (err) {
               if (err) console.log(err)
@@ -261,36 +253,34 @@ function interaction (callback) {
 }
 
 function sendOut (resultsJSON) {
-  console.log('send out JSON: ' + JSON.stringify(resultsJSON))
-
   if (resultsJSON.publication === 'public') {
     const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
-    //const thumbFileInput = path.join(__dirname, '.idea', resultsJSON.thumb)
     let formData = new FormData()
-
     formData.append('file', fs.createReadStream(ideaFileInput))
-    formData.append('thumb', resultsJSON.thumb.join())
+    formData.append('thumb', resultsJSON.thumb)
     formData.append('title', resultsJSON.title)
     formData.append('description', resultsJSON.description)
     formData.append('hash', resultsJSON.hash)
-    formData.append('parents', resultsJSON.parents.join())
+    formData.append('parents', resultsJSON.parents)
     formData.append('tags', resultsJSON.tags)
     formData.append('api_token', resultsJSON.api_token)
+    formData.append('files', resultsJSON.files)
     const options = {
       method: 'POST',
       body: formData
     }
-    fetch(publicURL, options).then(
-      res => res.json()).then(json => console.log(json))
-
+    fetch(publicURL, options)
+      .then(res => console.log('IdeaBlock server responded with: ' + res.json()))
+      .then(json => shell.mv(path.join(__dirname, '.idea', resultsJSON.ideaFileName), path.join(os.homedir(), '.ideablock', '.ideas')))
+      .catch((err) => console.log(err))
   } else {
     let formData = new FormData()
     formData.append('title', resultsJSON.title)
     formData.append('description', resultsJSON.description)
     formData.append('hash', resultsJSON.hash)
-    formData.append('parents', resultsJSON.parents.join())
+    formData.append('parents', resultsJSON.parents)
     formData.append('tags', resultsJSON.tags)
-    formData.append('thumb', resultsJSON.thumb.join())
+    formData.append('thumb', resultsJSON.thumb)
     formData.append('api_token', resultsJSON.api_token)
     const options = {
       method: 'POST',
@@ -298,74 +288,45 @@ function sendOut (resultsJSON) {
     }
     fetch(privateURL, options)
       .then(res => console.log('IdeaBlock server responded with: ' + res.json()))
-      .then(json => shell.mv(path.join(__dirname, '.idea', resultsJSON.ideaFileName), path.join(__dirname, '.idea')))
+      .then(json => shell.mv(path.join(__dirname, '.idea', resultsJSON.ideaFileName), path.join(os.homedir(), '.ideablock', '.ideas')))
+      .catch((err) => console.log(err))
   }
 }
 
 // Helpers
-const arrayToObject = (arr) => Array.prototype.reduce((obj, item) => {
-  obj[item.id] = item
-  return obj
-}, {})
-
-/*const arrayToObjectKey = (array, keyField) => array.reduce((obj, item) => {
-  obj[item[keyField]] = item
-  return obj
-}, {}) */
-
-function print (param) {
-  console.log(param)
-}
 
 function dotIdea (callback) {
   if (fs.existsSync(path.join(__dirname, '.idea'))) {
     callback(null)
   } else {
-    console.log('Welcome to IdeaBlock Beta.')
     shell.mkdir('.idea')
     callback(null)
   }
 }
 
-/*function parentConvert (choices) {
-  // let parentObject = {}
-  if (choices.length === 0) {
-    return 'none'
-  } else {
-    let ss = new SortedSet
-    for (let i = 0; i <= choices.length; i++) {
-      ss.push(parentArray[choices[i].value.toString()])
-      if (i === choices.length) return ss
-    }
-  }
+function banner () {
+  log(chalk.bold.gray("\n\n  WELCOME TO...\n\n  ========================================"))
+  log(chalk.bold.gray("||                                        ||\n||") + chalk.bold.rgb(107, 200, 202)("  ###   #         ") + chalk.bold.rgb(65, 90, 166)("##   #          #  ") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  ### ###  ## ") + chalk.bold.rgb(65, 90, 166)("# #  #  ### ### # #") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  # # ##  # # ") + chalk.bold.rgb(65, 90, 166)("##   #  # # #   ## ") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)(" #  ### ### ### ") + chalk.bold.rgb(65, 90, 166)("# #  ## ### ### # #") + chalk.bold.gray("   ||\n||  ") + chalk.bold.rgb(107, 200, 202)("###             ") + chalk.bold.rgb(65, 90, 166)("##     ") + chalk.bold.rgb(255, 216, 100)("_") + chalk.bold.gray("              ||"))
+  log(chalk.bold.gray("||  ") + chalk.bold.rgb(255, 216, 100)("                      \/ `  \/   \/") + chalk.bold.gray("      ||\n||") + chalk.bold.rgb(255, 216, 100)("                       \/_,  \/_, \/     ") + chalk.bold.gray("  ||"))
+  log(chalk.bold.gray("  ========================================\n"))
 }
-*/
 
 // Execution
-async.series([dotIdea, authorize, parents, interaction, copyFiles, ideaZip, hashFile],
+async.series([dotIdea, authorize, parents, copyFiles, interaction, ideaZip, hashFile],
   function (err, results) {
     if (err) console.log(err)
     // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
     let resultsJSON = {}
-    let interaction = results[3]
-    console.log('Interaction:' + interaction + ' stringed ' + JSON.stringify(interaction))
+    let interaction = results[4]
     resultsJSON.hash = results[6]
     resultsJSON.ideaFileName = results[5]
     resultsJSON.publication = interaction.publication
     resultsJSON.title = interaction.title
-    resultsJSON.thumb = interaction.thumb
+    resultsJSON.thumb = interaction.thumb.join()
     resultsJSON.description = interaction.description
-    resultsJSON.parents = interaction.parents
+    resultsJSON.parents = interaction.parents.join()
     resultsJSON.tags = interaction.tags
     resultsJSON.api_token = results[1].auth
-    console.log('resultsJSON: ' + JSON.stringify(resultsJSON))
+    resultsJSON.files = results[3].join()
     sendOut(resultsJSON)
   })
-
-  /*Silent
-    fileHash
-    token
-  public
-    ZipFile
-    fileHash
-  */
