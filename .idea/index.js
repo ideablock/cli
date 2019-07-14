@@ -129,12 +129,13 @@ function authorize (callback) {
     ]
     inquirer.prompt(loginQuestions).then(answers => {
       const auth = new Auth(answers.email, answers.password)
-      callback(null, auth)
+        .catch(err => console.log(err))
+      callback(null, answers)
     })
   } else {
-    var authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
+    let authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
     jsonAuthContents = JSON.parse(authContents)
-    callback(null, jsonAuthContents)
+    callback(null, authContents)
   }
 }
 
@@ -149,6 +150,7 @@ function parents (callback) {
       })
       callback(null)
     })
+    .catch(err => console.log(err))
 }
 
 function copyFiles (callback) {
@@ -265,6 +267,7 @@ function sendOut (resultsJSON) {
     formData.append('tags', resultsJSON.tags)
     formData.append('api_token', resultsJSON.api_token)
     formData.append('files', resultsJSON.files)
+    console.log("FormdataPublic: " + JSON.stringify(formData))
     const options = {
       method: 'POST',
       body: formData
@@ -282,6 +285,7 @@ function sendOut (resultsJSON) {
     formData.append('tags', resultsJSON.tags)
     formData.append('thumb', resultsJSON.thumb)
     formData.append('api_token', resultsJSON.api_token)
+    console.log("FormdataPrivate: " + JSON.stringify(formData))
     const options = {
       method: 'POST',
       body: formData

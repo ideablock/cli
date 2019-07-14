@@ -1,12 +1,9 @@
 const os = require('os')
 const path = require('path')
-const shell = require('shelljs')
 const tokenURL = 'https://beta.ideablock.io/cli/update-token'
 const fetch = require('node-fetch')
 const FormData = require('form-data')
 const fs = require('fs')
-
-
 
 class Auth {
   constructor (email, password) {
@@ -24,20 +21,14 @@ class Auth {
   }
 
   saveToken (token) {
-    shell.mkdir(path.join(os.homedir(), '/.ideablock'))
-    const fileLoc = path.join(os.homedir(), '/.ideablock', 'auth.json')
-    fs.open(fileLoc, err => {
+    console.log("THIS IS TOKEN: " + token)
+    fs.mkdir(path.join(os.homedir(), '/.ideablock'), { mode: 0o600 }, (err) => {
       if (err) console.log(err)
+      const fileLoc = path.join(os.homedir(), '/.ideablock', 'auth.json')
       const jsonWriteData = { token }
-      fs.mkdir(os.homedir() + '/.ideablock', err => {
+      fs.writeFile(fileLoc, JSON.stringify(jsonWriteData), { mode: 0o600 }, err => {
         if (err) console.log(err)
-      })
-      fs.writeFile(fileLoc, JSON.stringify(jsonWriteData), err => {
-        if (err == null) {
-          console.log('Token updated successfully')
-        } else {
-          console.log(err)
-        }
+        console.log('Token updated successfully to: ' + JSON.stringify(jsonWriteData))
       })
     })
   }

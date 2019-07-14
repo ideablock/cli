@@ -23,6 +23,8 @@ const FormData = require('form-data')
 const os = require('os')
 const chalk = require('chalk')
 const Auth = require('./auth.js')
+const Sentry = require('@sentry/node')
+Sentry.init({ dsn: 'https://eaa8e531c8cd4d35bccbde50229ae155@sentry.io/1504314' })
 const publicURL = 'https://beta.ideablock.io/cli/create-idea'
 const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
@@ -129,12 +131,13 @@ function authorize (callback) {
     ]
     inquirer.prompt(loginQuestions).then(answers => {
       const auth = new Auth(answers.email, answers.password)
-      callback(null, auth)
+      callback(null, answers)
     })
   } else {
-    var authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
+    let authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
     jsonAuthContents = JSON.parse(authContents)
-    callback(null, jsonAuthContents)
+    console.log("Should be objectobject? " + jsonAuthContents)
+    callback(null, authContents)
   }
 }
 
@@ -149,6 +152,7 @@ function parents (callback) {
       })
       callback(null)
     })
+    .catch(err => console.log(err))
 }
 
 function copyFiles (callback) {
@@ -265,6 +269,7 @@ function sendOut (resultsJSON) {
     formData.append('tags', resultsJSON.tags)
     formData.append('api_token', resultsJSON.api_token)
     formData.append('files', resultsJSON.files)
+    console.log("FormdataPublic: " + JSON.stringify(formData))
     const options = {
       method: 'POST',
       body: formData
@@ -282,6 +287,7 @@ function sendOut (resultsJSON) {
     formData.append('tags', resultsJSON.tags)
     formData.append('thumb', resultsJSON.thumb)
     formData.append('api_token', resultsJSON.api_token)
+    console.log("FormdataPrivate: " + JSON.stringify(formData))
     const options = {
       method: 'POST',
       body: formData
