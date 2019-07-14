@@ -16,7 +16,7 @@ const inquirer = require('inquirer')
 const path = require('path')
 const zipper = require('zip-local')
 const crypto = require('crypto')
-const fs = require('fs')
+const fs = require('fs-extra')
 const async = require('async')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
@@ -135,8 +135,11 @@ function authorize (callback) {
     })
   } else {
     let authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
+    console.log("bare authcontents b4 parse " + authContents)
+    console.log("bare authcontents.auth b4 parse " + authContents.auth)
     jsonAuthContents = JSON.parse(authContents)
-    console.log("Should be objectobject? " + jsonAuthContents)
+    console.log("bare jsonauthcontents after parse " + jsonAuthContents)
+    console.log("bare jsonauthcontents.auth after parse " + jsonAuthContents.auth)
     callback(null, authContents)
   }
 }
@@ -332,7 +335,7 @@ async.series([dotIdea, authorize, parents, copyFiles, interaction, ideaZip, hash
     resultsJSON.description = interaction.description
     resultsJSON.parents = interaction.parents.join()
     resultsJSON.tags = interaction.tags
-    resultsJSON.api_token = results[1].auth
+    resultsJSON.api_token = jsonAuthContents.auth
     resultsJSON.files = results[3].join()
     sendOut(resultsJSON)
   })

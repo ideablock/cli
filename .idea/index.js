@@ -16,13 +16,15 @@ const inquirer = require('inquirer')
 const path = require('path')
 const zipper = require('zip-local')
 const crypto = require('crypto')
-const fs = require('fs')
+const fs = require('fs-extra')
 const async = require('async')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
 const os = require('os')
 const chalk = require('chalk')
 const Auth = require('./auth.js')
+const Sentry = require('@sentry/node')
+Sentry.init({ dsn: 'https://eaa8e531c8cd4d35bccbde50229ae155@sentry.io/1504314' })
 const publicURL = 'https://beta.ideablock.io/cli/create-idea'
 const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
@@ -129,12 +131,15 @@ function authorize (callback) {
     ]
     inquirer.prompt(loginQuestions).then(answers => {
       const auth = new Auth(answers.email, answers.password)
-        .catch(err => console.log(err))
       callback(null, answers)
     })
   } else {
     let authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
+    console.log("bare authcontents b4 parse " + authContents)
+    console.log("bare authcontents.auth b4 parse " + authContents.auth)
     jsonAuthContents = JSON.parse(authContents)
+    console.log("bare jsonauthcontents after parse " + jsonAuthContents)
+    console.log("bare jsonauthcontents.auth after parse " + jsonAuthContents.auth)
     callback(null, authContents)
   }
 }
@@ -330,7 +335,7 @@ async.series([dotIdea, authorize, parents, copyFiles, interaction, ideaZip, hash
     resultsJSON.description = interaction.description
     resultsJSON.parents = interaction.parents.join()
     resultsJSON.tags = interaction.tags
-    resultsJSON.api_token = results[1].auth
+    resultsJSON.api_token = jsonAuthContents.auth
     resultsJSON.files = results[3].join()
     sendOut(resultsJSON)
   })
