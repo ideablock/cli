@@ -178,6 +178,7 @@ function parents (callback) {
       json.ideas.forEach(function (elem) {
         parentArray.push({ name: elem.id + ' - ' + elem.title, value: elem.id })
       })
+      console.log('OUT PARENTS')
       callback(null)
     })
     .catch(err => console.log(err))
@@ -196,6 +197,7 @@ function copyFiles (callback) {
           if (file.charAt(0) === '.' || fs.lstatSync(path.join(__dirname, file)).isDirectory()) {
             i = i + 1
             if (i === files.length - 1) {
+              console.log('OUT COPY')
               callback(null, fileArray)
             }
           } else {
@@ -208,6 +210,7 @@ function copyFiles (callback) {
               fileArray.push(file)
               if (i === files.length) {
                 fs.ensureDirSync(path.join(os.homedir(), '.ideablock', '.ideas'))
+                console.log('OUT COPY')
                 callback(null, fileArray)
               }
             })
@@ -226,6 +229,7 @@ function ideaZip (callback) {
   let ideaFileName = 'IdeaFile-' + date + '.zip'
   zipper.sync.zip(path.join(__dirname, '.idea')).compress().save(path.join(__dirname, '.idea', ideaFileName))
   ideaFile = ideaFileName
+  console.log('OUT ZIP')
   callback(null, ideaFileName)
 }
 
@@ -236,6 +240,7 @@ function hashFile (callback) {
   s.on('data', function (d) { shasum.update(d) })
   s.on('end', function () {
     var hash = shasum.digest('hex')
+    console.log('OUT HASH')
     callback(null, hash)
   })
 }
@@ -257,6 +262,7 @@ function interaction (callback) {
             }
             fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
               if (err) console.log(err)
+              console.log('OUT INTER')
               callback(null, ideaJSON)
             })
           })
@@ -273,6 +279,7 @@ function interaction (callback) {
             }
             fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
               if (err) console.log(err)
+              console.log('OUT INTER')
               callback(null, ideaJSON)
             })
           })
