@@ -32,7 +32,7 @@ const log = console.log
 let parentArray = []
 let jsonAuthContents = {}
 let ideaFile = ''
-let tArray = []
+let tArray = ['None']
 let question = [
   // Public or Private
   {
@@ -107,7 +107,7 @@ let questionsPublic = [
   },
   // Thumbnail
   {
-    type: 'checkbox',
+    type: 'list',
     name: 'thumb',
     message: 'Please select a thumbnail file from the list of idea files (or select none for default thumbnail)',
     choices: tArray
@@ -120,7 +120,7 @@ function authorize (callback) {
   fs.pathExists(path.join(os.homedir(), '.ideablock', 'auth.json'), (err, exists) => {
     if (err) console.log(err)
     if (exists) {
-      let authContents = fs.readFileSync(os.homedir() + '/.ideablock/auth.json')
+      let authContents = fs.readFileSync(path.join(os.homedir(), '/.ideablock', 'auth.json'))
       jsonAuthContents = JSON.parse(authContents)
       console.log('OUT AUTH')
       callback(null, jsonAuthContents.auth)
@@ -338,7 +338,7 @@ async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
         resultsJSON.ideaFileName = results[4]
         resultsJSON.publication = interaction.publication
         resultsJSON.title = interaction.title
-        if (resultsJSON.publication === "public") resultsJSON.thumb = interaction.thumb.join()
+        resultsJSON.thumb = interaction.thumb
         resultsJSON.description = interaction.description
         resultsJSON.parents = interaction.parents.join()
         resultsJSON.tags = interaction.tags
