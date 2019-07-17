@@ -18,6 +18,7 @@ const crypto = require('crypto')
 const fs = require('fs-extra')
 const async = require('async')
 const fetch = require('node-fetch')
+const axios = require('axios')
 const FormData = require('form-data')
 const os = require('os')
 const chalk = require('chalk')
@@ -125,8 +126,8 @@ function authorize (callback) {
       console.log('OUT AUTH')
       callback(null, jsonAuthContents.auth)
     } else {
-      console.log(chalk.bold.rgb(255, 216, 100)("Please login with your IdeaBlock credentials."))
-      console.log(chalk.rgb(255, 216, 100)("(You can sign up at https://beta.ideablock.io)\n"))
+      console.log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
+      console.log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
       const loginQuestions = [
         {
           type: 'input',
@@ -151,7 +152,7 @@ function authorize (callback) {
         fetch(tokenURL, options)
           .then(res => res.json())
           .then(json => {
-            //writeAuthFile(json)
+            // writeAuthFile(json)
             jsonAuthContents = JSON.parse(json)
             fs.ensureFile(authFilePath)
               .then(() => {
@@ -168,7 +169,7 @@ function authorize (callback) {
 
 function parents (callback) {
   let authJson = fs.readJsonSync(authFilePath)
-  console.log("AUTHJSONDOTAUTH: " + authJson.auth)
+  console.log('AUTHJSONDOTAUTH: ' + authJson.auth)
   let fD = new FormData
   fD.append('api_token', authJson.auth)
   fetch(parentURL, { method: 'post', body: fD })
@@ -242,7 +243,7 @@ function hashFile (callback) {
 function interaction (callback) {
   inquirer.prompt(question)
     .then(answers => {
-      console.log("ANSWERS: " + JSON.stringify(answers))
+      console.log('ANSWERS: ' + JSON.stringify(answers))
       if (answers.publication === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
@@ -292,14 +293,24 @@ function sendOut (resultsJSON) {
     formData.append('tags', resultsJSON.tags)
     formData.append('api_token', resultsJSON.api_token)
     formData.append('files', resultsJSON.files)
-    const options = {
-      method: 'POST',
-      body: formData
-    }
-    fetch(publicURL, options)
-      .then(res => res.json())
-      .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-      .catch((err) => console.log(err))
+    console.log("FD: " + JSON.stringify(formData))
+    axios({
+      method: 'post',
+      data: formData,
+      url: publicURL,
+      config: { headers: { 'Content-Type': 'multipart/form-data' } }
+    })
+      .then(function (response) {
+        console.log(JSON.stringify(response))
+      })
+      .catch(function (response) {
+        console.log(response)
+      })
+
+  // fetch(publicURL, options)
+  // .then(res => res.json())
+  // .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
+  // .catch((err) => console.log(err))
   } else {
     let formData = new FormData()
     formData.append('hash', resultsJSON.hash)
@@ -310,7 +321,7 @@ function sendOut (resultsJSON) {
       body: formData
     }
     fetch(privateURL, options)
-      .then(res => console.log('IdeaBlock server responded with: ' + res.json() + "\nOR plain res " + res + "\nOR res stringify ") + JSON.stringify(res.json()) + "\nOR parse res " + JSON.parse(res))
+      .then(res => console.log('IdeaBlock server responded with: ' + res.json() + '\nOR plain res ' + res + '\nOR res stringify ') + JSON.stringify(res.json()) + '\nOR parse res ' + JSON.parse(res))
       .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + JSON.stringify(json.btcTx) + '\nLitecoin Transaction Hash: ' + json.ltcTx))
       .catch((err) => console.log(err))
   }
@@ -344,7 +355,7 @@ async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
         resultsJSON.tags = interaction.tags
         resultsJSON.api_token = jsonAuthContents.auth
         resultsJSON.files = results[2].join()
-        console.log('RESULTSJSON: ' + resultsJSON + "\nRESULTSJSON STRINGIFIED: " + JSON.stringify(resultsJSON))
+        console.log('RESULTSJSON: ' + resultsJSON + '\nRESULTSJSON STRINGIFIED: ' + JSON.stringify(resultsJSON))
         sendOut(resultsJSON)
       })
       .catch(err => {

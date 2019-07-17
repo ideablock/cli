@@ -27,6 +27,7 @@
     "@sentry/node": "^5.5.0",
     "archiver": "^3.0.0",
     "async": "^3.1.0",
+    "axios": "^0.19.0",
     "collections": "^5.1.9",
     "crypto": "^1.0.1",
     "es6-promise": "^4.2.8",
