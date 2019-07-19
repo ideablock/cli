@@ -287,8 +287,8 @@ function sendOut (resultsJSON) {
       if (err) console.log(err)
       const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
       let formData = new FormData()
-      formData.append('file', fs.createReadStream(ideaFileInput))
-      formData.append('file', fs.createReadStream(ideaUp))
+      formData.append('file[]', fs.createReadStream(ideaFileInput))
+      formData.append('file[]', fs.createReadStream(ideaUp))
       console.log('FD: ' + JSON.stringify(formData))
       const options = {
         method: 'POST',
@@ -296,8 +296,10 @@ function sendOut (resultsJSON) {
       }
       fetch(publicURL, options)
         .then(res => res.json())
-        .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-        .catch((err) => console.log(err))
+        .then(json => {
+          var output = JSON.parse(json)
+          console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + output.BTC + '\nLitecoin Transaction Hash: ' + output.LTC)
+        }).catch((err) => console.log(err))
     })
   } else {
     let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')

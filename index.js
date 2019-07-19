@@ -76,8 +76,8 @@ let questionsPrivate = [
   {
     type: 'input',
     name: 'tags',
-    message: 'Please enter any tags you would like to add to the idea (comma-separated list)'
-  } 
+    message: 'Please enter any tags you would like to add to the idea (comma- or semicolon-separated list)'
+  }
 ]
 
 let questionsPublic = [
@@ -123,6 +123,7 @@ function authorize (callback) {
     if (exists) {
       let authContents = fs.readFileSync(path.join(os.homedir(), '/.ideablock', 'auth.json'))
       jsonAuthContents = JSON.parse(authContents)
+      console.log('OUT AUTH')
       callback(null, jsonAuthContents.auth)
     } else {
       console.log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
@@ -168,6 +169,7 @@ function authorize (callback) {
 
 function parents (callback) {
   let authJson = fs.readJsonSync(authFilePath)
+  console.log('AUTHJSONDOTAUTH: ' + authJson.auth)
   let fD = new FormData
   fD.append('api_token', authJson.auth)
   fetch(parentURL, { method: 'post', body: fD })
@@ -241,6 +243,7 @@ function hashFile (callback) {
 function interaction (callback) {
   inquirer.prompt(question)
     .then(answers => {
+      console.log('ANSWERS: ' + JSON.stringify(answers))
       if (answers.publication === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
@@ -284,8 +287,8 @@ function sendOut (resultsJSON) {
       if (err) console.log(err)
       const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
       let formData = new FormData()
-      formData.append('file', fs.createReadStream(ideaFileInput))
-      formData.append('file', fs.createReadStream(ideaUp))
+      formData.append('file[]', fs.createReadStream(ideaFileInput))
+      formData.append('file[]', fs.createReadStream(ideaUp))
       console.log('FD: ' + JSON.stringify(formData))
       const options = {
         method: 'POST',
@@ -293,8 +296,10 @@ function sendOut (resultsJSON) {
       }
       fetch(publicURL, options)
         .then(res => res.json())
-        .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-        .catch((err) => console.log(err))
+        .then(json => {
+          var output = JSON.parse(json)
+          console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + output.BTC + '\nLitecoin Transaction Hash: ' + output.LTC)
+        }).catch((err) => console.log(err))
     })
   } else {
     let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
