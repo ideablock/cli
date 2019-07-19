@@ -282,48 +282,41 @@ function interaction (callback) {
 
 function sendOut (resultsJSON) {
   if (resultsJSON.publication === 'public') {
-    const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
-    let formData = new FormData()
-    formData.append('file', fs.createReadStream(ideaFileInput))
-    formData.append('thumb', resultsJSON.thumb)
-    formData.append('title', resultsJSON.title)
-    formData.append('description', resultsJSON.description)
-    formData.append('hash', resultsJSON.hash)
-    formData.append('parents', resultsJSON.parents)
-    formData.append('tags', resultsJSON.tags)
-    formData.append('api_token', resultsJSON.api_token)
-    formData.append('files', resultsJSON.files)
-    console.log("FD: " + JSON.stringify(formData))
-    axios({
-      method: 'post',
-      data: formData,
-      url: publicURL,
-      config: { headers: { 'Content-Type': 'multipart/form-data' } }
+    let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
+    fs.writeJson(ideaUp, resultsJSON, err => {
+      if (err) console.log(err)
+      const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
+      let formData = new FormData()
+      formData.append('file', fs.createReadStream(ideaFileInput))
+      formData.append('file', fs.createReadStream(ideaUp))
+      console.log('FD: ' + JSON.stringify(formData))
+      const options = {
+        method: 'POST',
+        body: formData
+      }
+      fetch(publicURL, options)
+        .then(res => res.json())
+        .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
+        .catch((err) => console.log(err))
     })
-      .then(function (response) {
-        console.log(JSON.stringify(response))
-      })
-      .catch(function (response) {
-        console.log(response)
-      })
-
-  // fetch(publicURL, options)
-  // .then(res => res.json())
-  // .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + json.btcTx + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-  // .catch((err) => console.log(err))
   } else {
-    let formData = new FormData()
-    formData.append('hash', resultsJSON.hash)
-    formData.append('api_token', resultsJSON.api_token)
-    console.log('FormdataPrivate: ' + formData)
-    const options = {
-      method: 'POST',
-      body: formData
-    }
-    fetch(privateURL, options)
-      .then(res => console.log('IdeaBlock server responded with: ' + res.json() + '\nOR plain res ' + res + '\nOR res stringify ') + JSON.stringify(res.json()) + '\nOR parse res ' + JSON.parse(res))
-      .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + JSON.stringify(json.btcTx) + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-      .catch((err) => console.log(err))
+    let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
+    let resultsPrivateJSON = {}
+    resultsPrivateJSON.hash = resultsJSON.hash
+    resultsPrivateJSON.api_token = resultsJSON.api_token
+    fs.writeJson(ideaUp, resultsPrivateJSON, err => {
+      if (err) console.log(err)
+      let formData = new FormData()
+      formData.append('file', ideaUp)
+      const options = {
+        method: 'POST',
+        body: formData
+      }
+      fetch(privateURL, options)
+        .then(res => console.log('IdeaBlock server responded with: ' + res.json() + '\nOR plain res ' + res + '\nOR res stringify ') + JSON.stringify(res.json()) + '\nOR parse res ' + JSON.parse(res))
+        .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + JSON.stringify(json.btcTx) + '\nLitecoin Transaction Hash: ' + json.ltcTx))
+        .catch((err) => console.log(err))
+    })
   }
 }
 

@@ -76,8 +76,8 @@ let questionsPrivate = [
   {
     type: 'input',
     name: 'tags',
-    message: 'Please enter any tags you would like to add to the idea (comma- or semicolon-separated list)'
-  }
+    message: 'Please enter any tags you would like to add to the idea (comma-separated list)'
+  } 
 ]
 
 let questionsPublic = [
@@ -123,7 +123,6 @@ function authorize (callback) {
     if (exists) {
       let authContents = fs.readFileSync(path.join(os.homedir(), '/.ideablock', 'auth.json'))
       jsonAuthContents = JSON.parse(authContents)
-      console.log('OUT AUTH')
       callback(null, jsonAuthContents.auth)
     } else {
       console.log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
@@ -169,7 +168,6 @@ function authorize (callback) {
 
 function parents (callback) {
   let authJson = fs.readJsonSync(authFilePath)
-  console.log('AUTHJSONDOTAUTH: ' + authJson.auth)
   let fD = new FormData
   fD.append('api_token', authJson.auth)
   fetch(parentURL, { method: 'post', body: fD })
@@ -243,7 +241,6 @@ function hashFile (callback) {
 function interaction (callback) {
   inquirer.prompt(question)
     .then(answers => {
-      console.log('ANSWERS: ' + JSON.stringify(answers))
       if (answers.publication === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
