@@ -315,9 +315,11 @@ function sendOut (resultsJSON) {
         body: formData
       }
       fetch(privateURL, options)
-        .then(res => console.log('IdeaBlock server responded with: ' + res.json() + '\nOR plain res ' + res + '\nOR res stringify ') + JSON.stringify(res.json()) + '\nOR parse res ' + JSON.parse(res))
-        .then(json => console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + JSON.stringify(json.btcTx) + '\nLitecoin Transaction Hash: ' + json.ltcTx))
-        .catch((err) => console.log(err))
+        .then(res => res.json())
+        .then(json => {
+          var output = JSON.parse(json)
+          console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + output.BTC + '\nLitecoin Transaction Hash: ' + output.LTC)
+        }).catch((err) => console.log(err))
     })
   }
 }
