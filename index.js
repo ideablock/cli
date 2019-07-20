@@ -18,12 +18,9 @@ const crypto = require('crypto')
 const fs = require('fs-extra')
 const async = require('async')
 const fetch = require('node-fetch')
-const axios = require('axios')
 const FormData = require('form-data')
 const os = require('os')
 const chalk = require('chalk')
-const Sentry = require('@sentry/node')
-Sentry.init({ dsn: 'https://eaa8e531c8cd4d35bccbde50229ae155@sentry.io/1504314' })
 const publicURL = 'https://beta.ideablock.io/cli/create-idea'
 const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
@@ -32,6 +29,7 @@ const authFilePath = path.join(os.homedir(), '.ideablock', 'auth.json')
 const log = console.log
 let parentArray = []
 let jsonAuthContents = {}
+let ideaDirName = ''
 let ideaFile = ''
 let tArray = ['None']
 let question = [
@@ -119,15 +117,14 @@ let questionsPublic = [
 function authorize (callback) {
   banner()
   fs.pathExists(path.join(os.homedir(), '.ideablock', 'auth.json'), (err, exists) => {
-    if (err) console.log(err)
+    if (err) log(err)
     if (exists) {
-      let authContents = fs.readFileSync(path.join(os.homedir(), '/.ideablock', 'auth.json'))
+      let authContents = fs.readFileSync(path.join(os.homedir(), '.ideablock', 'auth.json'))
       jsonAuthContents = JSON.parse(authContents)
-      console.log('OUT AUTH')
       callback(null, jsonAuthContents.auth)
     } else {
-      console.log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
-      console.log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
+      log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
+      log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
       const loginQuestions = [
         {
           type: 'input',
@@ -169,7 +166,6 @@ function authorize (callback) {
 
 function parents (callback) {
   let authJson = fs.readJsonSync(authFilePath)
-  console.log('AUTHJSONDOTAUTH: ' + authJson.auth)
   let fD = new FormData
   fD.append('api_token', authJson.auth)
   fetch(parentURL, { method: 'post', body: fD })
@@ -180,7 +176,7 @@ function parents (callback) {
       })
       callback(null)
     })
-    .catch(err => console.log(err))
+    .catch(err => log(err))
 }
 
 function copyFiles (callback) {
@@ -188,7 +184,7 @@ function copyFiles (callback) {
     .then(() => {
       fs.readdir(__dirname, function (err, files) {
         if (err) {
-          return console.log('Unable to read the files in the present directory')
+          return log('Unable to read the files in the present directory')
         }
         var i = 0
         var fileArray = []
@@ -200,7 +196,7 @@ function copyFiles (callback) {
             }
           } else {
             fs.copy(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
-              if (err) console.log(err)
+              if (err) log(err)
               if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg')) {
                 tArray.push(file)
               }
@@ -216,13 +212,14 @@ function copyFiles (callback) {
       })
     })
     .catch(err => {
-      console.log(err)
+      log(err)
     })
 }
 
 // Zip array of files
 function ideaZip (callback) {
   let date = Math.floor(new Date() / 1000)
+  ideaDirName = 'Idea-' + date
   let ideaFileName = 'IdeaFile-' + date + '.zip'
   zipper.sync.zip(path.join(__dirname, '.idea')).compress().save(path.join(__dirname, '.idea', ideaFileName))
   ideaFile = ideaFileName
@@ -243,7 +240,6 @@ function hashFile (callback) {
 function interaction (callback) {
   inquirer.prompt(question)
     .then(answers => {
-      console.log('ANSWERS: ' + JSON.stringify(answers))
       if (answers.publication === 'Public') {
         inquirer.prompt(questionsPublic)
           .then(answersPublic => {
@@ -256,11 +252,11 @@ function interaction (callback) {
               'publication': 'public'
             }
             fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
-              if (err) console.log(err)
+              if (err) log(err)
               callback(null, ideaJSON)
             })
           })
-          .catch(err => console.log(err))
+          .catch(err => log(err))
       } else {
         inquirer.prompt(questionsPrivate)
           .then(answersPrivate => {
@@ -272,7 +268,7 @@ function interaction (callback) {
               'publication': 'private'
             }
             fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
-              if (err) console.log(err)
+              if (err) log(err)
               callback(null, ideaJSON)
             })
           })
@@ -284,12 +280,11 @@ function sendOut (resultsJSON) {
   if (resultsJSON.publication === 'public') {
     let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
     fs.writeJson(ideaUp, resultsJSON, err => {
-      if (err) console.log(err)
+      if (err) log(err)
       const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
       let formData = new FormData()
       formData.append('file[]', fs.createReadStream(ideaFileInput))
       formData.append('file[]', fs.createReadStream(ideaUp))
-      console.log('FD: ' + JSON.stringify(formData))
       const options = {
         method: 'POST',
         body: formData
@@ -298,8 +293,19 @@ function sendOut (resultsJSON) {
         .then(res => res.json())
         .then(json => {
           var output = JSON.parse(json)
-          console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + output.BTC + '\nLitecoin Transaction Hash: ' + output.LTC)
-        }).catch((err) => console.log(err))
+          log(chalk.bold.rgb(107, 200, 202)('\n\nCongratulations! Your idea has been successfully protected using IdeaBlock!\n'))
+          log(chalk.bold.rgb(107, 200, 202)('Idea Information:'))
+          log(chalk.bold.white('\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash))
+          log(chalk.bold.yellow('Bitcoin Transaction: ' + output.BTC))
+          log(chalk.bold.gray('Litecoin Transaction Hash: ' + output.LTC))
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', '.ideas', 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
+            .then(() => { fs.remove(path.join(__dirname, '.idea')) })
+            .then(() => {
+              log(chalk.bold.red('\nREMEMBER:\n') + chalk.bold.white('\t- The custody of your idea files and blockchain transaction hashes is solely up to you.\n\tPlease be sure to keep these files in a safe place. \n\tIf these files are misplaced, lost, or destroyed, verification of their existence at this moment in time will likely not be directly verifiable in the future without substantial difficulty.\n\tAccordingly, we recommend that you create one or more backups of the files in their local storage directory below.'))
+              log(chalk.bold.blue.underline('Idea File Location\n') + chalk.bold.white('The permanent idea files representing this uploaded idea and a JSON file containing its corresponding blockchain-specific transaction hashes can be found at the following directory on the local filesystem:\n'))
+              log(chalk.bold.blue(path.join(os.homedir(), '.ideablock', ideaDirName)))
+            })
+        }).catch((err) => log(err))
     })
   } else {
     let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
@@ -307,7 +313,7 @@ function sendOut (resultsJSON) {
     resultsPrivateJSON.hash = resultsJSON.hash
     resultsPrivateJSON.api_token = resultsJSON.api_token
     fs.writeJson(ideaUp, resultsPrivateJSON, err => {
-      if (err) console.log(err)
+      if (err) log(err)
       let formData = new FormData()
       formData.append('file', ideaUp)
       const options = {
@@ -318,8 +324,19 @@ function sendOut (resultsJSON) {
         .then(res => res.json())
         .then(json => {
           var output = JSON.parse(json)
-          console.log('Congratulations, your idea has been successfully protected using IdeaBlock!\n\nIdea Information:\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash + '\nBitcoin Transaction: ' + output.BTC + '\nLitecoin Transaction Hash: ' + output.LTC)
-        }).catch((err) => console.log(err))
+          log(chalk.bold.rgb(107, 200, 202)('\n\nCongratulations! Your idea has been successfully protected using IdeaBlock!\n'))
+          log(chalk.bold.rgb(107, 200, 202)('Idea Information:'))
+          log(chalk.bold.white('\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash))
+          log(chalk.bold.yellow('Bitcoin Transaction: ' + output.BTC))
+          log(chalk.bold.gray('Litecoin Transaction Hash: ' + output.LTC))
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', '.ideas', 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
+            .then(() => { fs.remove(path.join(__dirname, '.idea')) })
+            .then(() => {
+              log(chalk.bold.red('\nREMEMBER:\n') + chalk.bold.white('\t- The custody of your idea files and blockchain transaction hashes is solely up to you.\n\tPlease be sure to keep these files in a safe place. \n\tIf these files are misplaced, lost, or destroyed, verification of their existence at this moment in time will likely not be directly verifiable in the future without substantial difficulty.\n\tAccordingly, we recommend that you create one or more backups of the files in their local storage directory below.'))
+              log(chalk.bold.blue.underline('Idea File Location\n') + chalk.bold.white('The permanent idea files representing this uploaded idea and a JSON file containing its corresponding blockchain-specific transaction hashes can be found at the following directory on the local filesystem:\n'))
+              log(chalk.bold.blue(path.join(os.homedir(), '.ideablock', ideaDirName)))
+            })
+        }).catch((err) => log(err))
     })
   }
 }
@@ -327,7 +344,7 @@ function sendOut (resultsJSON) {
 // Helpers
 
 function banner () {
-  log(chalk.bold.gray('\n\n  WELCOME TO...\n\n  ========================================'))
+  log(chalk.bold.white.underline('\n\n  WELCOME TO...\n\n  ========================================'))
   log(chalk.bold.gray('||                                        ||\n||') + chalk.bold.rgb(107, 200, 202)('  ###   #         ') + chalk.bold.rgb(65, 90, 166)('##   #          #  ') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  ### ###  ## ') + chalk.bold.rgb(65, 90, 166)('# #  #  ### ### # #') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  # # ##  # # ') + chalk.bold.rgb(65, 90, 166)('##   #  # # #   ## ') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  ### ### ### ') + chalk.bold.rgb(65, 90, 166)('# #  ## ### ### # #') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)('###             ') + chalk.bold.rgb(65, 90, 166)('##     ') + chalk.bold.rgb(255, 216, 100)('_') + chalk.bold.gray('              ||'))
   log(chalk.bold.gray('||  ') + chalk.bold.rgb(255, 216, 100)('                      \/ `  \/   \/') + chalk.bold.gray('      ||\n||') + chalk.bold.rgb(255, 216, 100)('                       \/_,  \/_, \/     ') + chalk.bold.gray('  ||'))
   log(chalk.bold.gray('||                                        ||\n  ========================================\n\n'))
@@ -336,27 +353,32 @@ function banner () {
 // Execution
 async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
   function (err, results) {
-    fs.copy(path.join(__dirname, '.idea', results[4]), path.join(os.homedir(), '.ideablock', '.ideas', results[4]), { overwrite: true })
+    if (err) log(err)
+    fs.ensureDir(path.join(os.homedir(), '.ideablock', '.ideas', ideaDirName))
       .then(() => {
-        if (err) console.log(err)
-        // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
-        let resultsJSON = {}
-        let interaction = results[3]
-        resultsJSON.hash = results[5]
-        resultsJSON.ideaFileName = results[4]
-        resultsJSON.publication = interaction.publication
-        resultsJSON.title = interaction.title
-        resultsJSON.thumb = interaction.thumb
-        resultsJSON.description = interaction.description
-        resultsJSON.parents = interaction.parents.join()
-        resultsJSON.tags = interaction.tags
-        resultsJSON.api_token = jsonAuthContents.auth
-        resultsJSON.files = results[2].join()
-        console.log('RESULTSJSON: ' + resultsJSON + '\nRESULTSJSON STRINGIFIED: ' + JSON.stringify(resultsJSON))
-        sendOut(resultsJSON)
+        fs.copy(path.join(__dirname, '.idea', results[4]), path.join(os.homedir(), '.ideablock', '.ideas', ideaDirName, results[4]), { overwrite: true })
+          .then(() => {
+            // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
+            let resultsJSON = {}
+            let interaction = results[3]
+            resultsJSON.hash = results[5]
+            resultsJSON.ideaFileName = results[4]
+            resultsJSON.publication = interaction.publication
+            resultsJSON.title = interaction.title
+            resultsJSON.thumb = interaction.thumb
+            resultsJSON.description = interaction.description
+            resultsJSON.parents = interaction.parents.join()
+            resultsJSON.tags = interaction.tags
+            resultsJSON.api_token = jsonAuthContents.auth
+            resultsJSON.files = results[2].join()
+            sendOut(resultsJSON)
+          })
+          .catch(err => {
+            log(err)
+          })
       })
       .catch(err => {
-        console.log(err)
+        log(err)
       })
   }
 )
