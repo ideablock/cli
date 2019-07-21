@@ -24,6 +24,7 @@ const Table = require('cli-table2')
 const chalk = require('chalk')
 const figlet = require('figlet')
 const ora = require('ora')
+const boxen = require('boxen')
 const publicURL = 'https://beta.ideablock.io/cli/create-idea'
 const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
@@ -283,9 +284,8 @@ function hashFile (callback) {
 }
 
 function interaction (callback) {
-  log('\t---------------------------')
-  log('\t💡💡💡   NEW IDEA   💡💡💡')
-  log('\t---------------------------\n')
+  log('')
+  log(boxen('💡💡💡   NEW IDEA   💡💡💡', { padding: 0, borderColor: 'cyan' }))
   inquirer.prompt(question)
     .then(answers => {
       if (answers.publication === 'Public') {
