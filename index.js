@@ -20,13 +20,58 @@ const async = require('async')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
 const os = require('os')
+const Table = require('cli-table2')
 const chalk = require('chalk')
+const figlet = require('figlet')
+const ora = require('ora')
 const publicURL = 'https://beta.ideablock.io/cli/create-idea'
 const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
 const tokenURL = 'https://beta.ideablock.io/cli/update-token'
 const authFilePath = path.join(os.homedir(), '.ideablock', 'auth.json')
 const log = console.log
+const spinUp = {
+  interval: 100,
+  frames: [
+    '🖥️💡------------------------------⛓️',
+    '🖥️-💡-----------------------------⛓️',
+    '🖥️--💡----------------------------⛓️',
+    '🖥️---💡---------------------------⛓️',
+    '🖥️----💡--------------------------⛓️',
+    '🖥️-----💡-------------------------⛓️',
+    '🖥️------💡------------------------⛓️',
+    '🖥️-------💡-----------------------⛓️',
+    '🖥️--------💡----------------------⛓️',
+    '🖥️---------💡---------------------⛓️',
+    '🖥️----------💡--------------------⛓️',
+    '🖥️-----------💡-------------------⛓️',
+    '🖥️------------💡------------------⛓️',
+    '🖥️-------------💡-----------------⛓️',
+    '🖥️--------------💡----------------⛓️',
+    '🖥️---------------💡---------------⛓️',
+    '🖥️----------------💡--------------⛓️',
+    '🖥️-----------------💡-------------⛓️',
+    '🖥️------------------💡------------⛓️',
+    '🖥️-------------------💡-----------⛓️',
+    '🖥️--------------------💡----------⛓️',
+    '🖥️---------------------💡---------⛓️',
+    '🖥️----------------------💡--------⛓️',
+    '🖥️-----------------------💡-------⛓️',
+    '🖥️------------------------💡------⛓️',
+    '🖥️-------------------------💡-----⛓️',
+    '🖥️--------------------------💡----⛓️',
+    '🖥️---------------------------💡---⛓️',
+    '🖥️----------------------------💡--⛓️',
+    '🖥️-----------------------------💡-⛓️',
+    '🖥️------------------------------💡⛓️',
+    '🖥️--------------------------------💡',
+    '🖥️--------------------------------💡',
+    '🖥️--------------------------------💡',
+    '🖥️--------------------------------💡',
+    '🖥️--------------------------------💡',
+    '🖥️--------------------------------💡'
+  ]
+}
 let parentArray = []
 let jsonAuthContents = {}
 let ideaDirName = ''
@@ -203,7 +248,7 @@ function copyFiles (callback) {
               i = i + 1
               fileArray.push(file)
               if (i === files.length) {
-                fs.ensureDirSync(path.join(os.homedir(), '.ideablock', '.ideas'))
+                fs.ensureDirSync(path.join(os.homedir(), '.ideablock', 'ideas'))
                 callback(null, fileArray)
               }
             })
@@ -238,6 +283,9 @@ function hashFile (callback) {
 }
 
 function interaction (callback) {
+  log('\t---------------------------')
+  log('\t💡💡💡   NEW IDEA   💡💡💡')
+  log('\t---------------------------\n')
   inquirer.prompt(question)
     .then(answers => {
       if (answers.publication === 'Public') {
@@ -277,6 +325,12 @@ function interaction (callback) {
 }
 
 function sendOut (resultsJSON) {
+  log('')
+  const spinner = new ora({
+    spinner: spinUp,
+    indent: 5
+  })
+  spinner.start('  Tethering Idea to Blockchains')
   if (resultsJSON.publication === 'public') {
     let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
     fs.writeJson(ideaUp, resultsJSON, err => {
@@ -292,18 +346,22 @@ function sendOut (resultsJSON) {
       fetch(publicURL, options)
         .then(res => res.json())
         .then(json => {
+          spinner.stop()
           var output = JSON.parse(json)
-          log(chalk.bold.rgb(107, 200, 202)('\n\nCongratulations! Your idea has been successfully protected using IdeaBlock!\n'))
-          log(chalk.bold.rgb(107, 200, 202)('Idea Information:'))
-          log(chalk.bold.white('\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash))
-          log(chalk.bold.yellow('Bitcoin Transaction: ' + output.BTC))
-          log(chalk.bold.gray('Litecoin Transaction Hash: ' + output.LTC))
-          fs.writeJSON(path.join(os.homedir(), '.ideablock', '.ideas', 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
-            .then(() => { fs.remove(path.join(__dirname, '.idea')) })
+          log('\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
             .then(() => {
-              log(chalk.bold.red('\nREMEMBER:\n') + chalk.bold.white('\t- The custody of your idea files and blockchain transaction hashes is solely up to you.\n\tPlease be sure to keep these files in a safe place. \n\tIf these files are misplaced, lost, or destroyed, verification of their existence at this moment in time will likely not be directly verifiable in the future without substantial difficulty.\n\tAccordingly, we recommend that you create one or more backups of the files in their local storage directory below.'))
-              log(chalk.bold.blue.underline('Idea File Location\n') + chalk.bold.white('The permanent idea files representing this uploaded idea and a JSON file containing its corresponding blockchain-specific transaction hashes can be found at the following directory on the local filesystem:\n'))
-              log(chalk.bold.blue(path.join(os.homedir(), '.ideablock', ideaDirName)))
+              fs.remove(path.join(__dirname, '.idea'))})
+            .then(() => {
+              let table = new Table({ style: { head: [], border: [] } })
+              table.push(
+                [{ colSpan: 2, content: chalk.bold.red('Idea Information:') }],
+                [chalk.white('Idea File Hash: '), resultsJSON.hash],
+                [chalk.yellow('Bitcoin Hash: '), output.BTC],
+                [chalk.gray('Litecoin Hash: '), output.LTC],
+                [chalk.blue('Idea File Location'), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName)]
+              )
+              console.log(table.toString())
             })
         }).catch((err) => log(err))
     })
@@ -323,18 +381,23 @@ function sendOut (resultsJSON) {
       fetch(privateURL, options)
         .then(res => res.json())
         .then(json => {
+          spinner.stop()
           var output = JSON.parse(json)
-          log(chalk.bold.rgb(107, 200, 202)('\n\nCongratulations! Your idea has been successfully protected using IdeaBlock!\n'))
-          log(chalk.bold.rgb(107, 200, 202)('Idea Information:'))
-          log(chalk.bold.white('\nSHA-256 Hash of IdeaFile: ' + resultsJSON.hash))
-          log(chalk.bold.yellow('Bitcoin Transaction: ' + output.BTC))
-          log(chalk.bold.gray('Litecoin Transaction Hash: ' + output.LTC))
-          fs.writeJSON(path.join(os.homedir(), '.ideablock', '.ideas', 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
-            .then(() => { fs.remove(path.join(__dirname, '.idea')) })
+          log('\n\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
             .then(() => {
-              log(chalk.bold.red('\nREMEMBER:\n') + chalk.bold.white('\t- The custody of your idea files and blockchain transaction hashes is solely up to you.\n\tPlease be sure to keep these files in a safe place. \n\tIf these files are misplaced, lost, or destroyed, verification of their existence at this moment in time will likely not be directly verifiable in the future without substantial difficulty.\n\tAccordingly, we recommend that you create one or more backups of the files in their local storage directory below.'))
-              log(chalk.bold.blue.underline('Idea File Location\n') + chalk.bold.white('The permanent idea files representing this uploaded idea and a JSON file containing its corresponding blockchain-specific transaction hashes can be found at the following directory on the local filesystem:\n'))
-              log(chalk.bold.blue(path.join(os.homedir(), '.ideablock', ideaDirName)))
+              fs.remove(path.join(__dirname, '.idea'))})
+            .then(() => {
+              let table = new Table({ style: { head: [], border: [] } })
+              table.push(
+                [{ colSpan: 2, content: chalk.bold.red('Idea Information:') }],
+                [chalk.white('Idea File Hash: '), resultsJSON.hash],
+                [chalk.yellow('Bitcoin Hash: '), output.BTC],
+                [chalk.gray('Litecoin Hash: '), output.LTC],
+                [chalk.blue('Idea File Location'), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName)]
+              )
+              console.log(table.toString())
+              console.log('')
             })
         }).catch((err) => log(err))
     })
@@ -344,19 +407,21 @@ function sendOut (resultsJSON) {
 // Helpers
 
 function banner () {
-  log(chalk.bold.white.underline('\n\n  WELCOME TO...\n\n  ========================================'))
-  log(chalk.bold.gray('||                                        ||\n||') + chalk.bold.rgb(107, 200, 202)('  ###   #         ') + chalk.bold.rgb(65, 90, 166)('##   #          #  ') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  ### ###  ## ') + chalk.bold.rgb(65, 90, 166)('# #  #  ### ### # #') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  # # ##  # # ') + chalk.bold.rgb(65, 90, 166)('##   #  # # #   ## ') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)(' #  ### ### ### ') + chalk.bold.rgb(65, 90, 166)('# #  ## ### ### # #') + chalk.bold.gray('   ||\n||  ') + chalk.bold.rgb(107, 200, 202)('###             ') + chalk.bold.rgb(65, 90, 166)('##     ') + chalk.bold.rgb(255, 216, 100)('_') + chalk.bold.gray('              ||'))
-  log(chalk.bold.gray('||  ') + chalk.bold.rgb(255, 216, 100)('                      \/ `  \/   \/') + chalk.bold.gray('      ||\n||') + chalk.bold.rgb(255, 216, 100)('                       \/_,  \/_, \/     ') + chalk.bold.gray('  ||'))
-  log(chalk.bold.gray('||                                        ||\n  ========================================\n\n'))
+  log('\n')
+  log(figlet.textSync('IdeaBlock', {
+    font: 'slant',
+    horizontalLayout: 'default',
+    verticalLayout: 'default'
+  }))
 }
 
 // Execution
 async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
   function (err, results) {
     if (err) log(err)
-    fs.ensureDir(path.join(os.homedir(), '.ideablock', '.ideas', ideaDirName))
+    fs.ensureDir(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName))
       .then(() => {
-        fs.copy(path.join(__dirname, '.idea', results[4]), path.join(os.homedir(), '.ideablock', '.ideas', ideaDirName, results[4]), { overwrite: true })
+        fs.copy(path.join(__dirname, '.idea', results[4]), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, results[4]), { overwrite: true })
           .then(() => {
             // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
             let resultsJSON = {}
