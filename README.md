@@ -3,8 +3,7 @@
 Command-line version of [IdeaBlock Beta](https://ideablock.io) for git-like idea push in workflows.
 
 # Prerequisites
-- [Register](https://beta.ideablock.io) for a free IdeaBlock Beta account
-  *Please be sure to read and agree to IdeaBlock Beta [Terms and Conditions](https://beta.ideablock.io/terms)
+- [Register](https://beta.ideablock.io) for a free IdeaBlock Beta account (Please be sure to read and agree to IdeaBlock Beta [Terms and Conditions](https://beta.ideablock.io/terms))
 - Install [NodeJS and npm](https://nodejs.org/en/download/)
 
 # Download
