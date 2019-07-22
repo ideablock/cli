@@ -22,7 +22,7 @@
     "litecoin"
   ],
   "author": "IdeaBlock",
-  "license": "See license.json",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/emsheets/ideablock-cli/issues"
   },
