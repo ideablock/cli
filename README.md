@@ -15,10 +15,12 @@ $ npm i -g ideablock-cli
 # Usage
 IdeaBlock CLI bundles the current version of all files in the current working directory and assumes that the directory is flat (in other words, files in subdirectories are not included in the idea upload).
 
-Inside the directory in which an idea's files are stored, open your terminal and run:
 ```bash
+$ cd /path/to/dir/with/idea/files/
 $ ideablock init
 ```
+
+The current version v1.0.1 requires a flat file structure for the idea.  In other words, any subdirectories and subdirectory files under the directory from which `ideablock init` is called will be ignored.
 
 # Beta
 **Please be aware that this is beta software. Accordingly, the software will be frequently updated with bug fixes, sometimes without prior announcement.**
