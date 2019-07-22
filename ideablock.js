@@ -381,7 +381,7 @@ function sendOut (resultsJSON) {
     fs.writeJson(ideaUp, resultsSecretJSON, err => {
       if (err) log(err)
       let formData = new FormData()
-      formData.append('file', ideaUp)
+      formData.append('file', fs.createReadStream(ideaUp))
       const options = {
         method: 'POST',
         body: formData
