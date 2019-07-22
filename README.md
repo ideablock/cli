@@ -1,4 +1,4 @@
-![](https://i.imgur.com/G07I9tF.png)
+![](https://ideablock.io/IBCLI.png)
 
 Command-line version of [IdeaBlock Beta](https://ideablock.io) for git-like idea push in workflows.
 
