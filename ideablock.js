@@ -93,27 +93,30 @@ let question = [
       },
       {
         name: 'Private'
+      },
+      {
+        name: 'Silent'
       }
     ]
   }
 ]
 
-let questionsPrivate = [
+let questionsSecret = [
   // Idea Title
   {
     type: 'input',
     name: 'title',
-    message: 'Idea Title?'
+    message: 'Idea title?'
   },
   {
     // Description
     type: 'input',
     name: 'description',
-    message: 'Additional Description?'
+    message: 'Additional description?'
   },
   {
     type: 'checkbox',
-    message: 'Select any parent ideas you wish you use.',
+    message: 'Select any parent ideas:',
     name: 'parents',
     choices: parentArray
 
@@ -122,26 +125,26 @@ let questionsPrivate = [
   {
     type: 'input',
     name: 'tags',
-    message: 'Please enter any tags you would like to add to the idea (comma- or semicolon-separated list)'
+    message: 'Add tags (comma- or semicolon-separated list)'
   }
 ]
 
-let questionsPublic = [
+let questionsPublicPrivate = [
   // Idea Title
   {
     type: 'input',
     name: 'title',
-    message: 'Idea Title?'
+    message: 'Idea title?'
   },
   {
     // Description
     type: 'input',
     name: 'description',
-    message: 'Additional Description?'
+    message: 'Additional description?'
   },
   {
     type: 'checkbox',
-    message: 'Select any parent ideas you wish you use.',
+    message: 'Select any parent ideas.',
     name: 'parents',
     choices: parentArray
 
@@ -228,22 +231,22 @@ function parents (callback) {
 }
 
 function copyFiles (callback) {
-  fs.ensureDir(path.join(__dirname, '.idea'))
+  fs.emptyDir(path.join(process.cwd(), '.idea'))
     .then(() => {
-      fs.readdir(__dirname, function (err, files) {
+      fs.readdir(process.cwd(), function (err, files) {
         if (err) {
           return log('Unable to read the files in the present directory')
         }
         var i = 0
         var fileArray = []
         files.forEach(function (file) {
-          if (file.charAt(0) === '.' || fs.lstatSync(path.join(__dirname, file)).isDirectory()) {
+          if (file.charAt(0) === '.' || fs.lstatSync(path.join(process.cwd(), file)).isDirectory()) {
             i = i + 1
             if (i === files.length - 1) {
               callback(null, fileArray)
             }
           } else {
-            fs.copy(path.join(__dirname, file), path.join(__dirname, '.idea', file), (err) => {
+            fs.copy(path.join(process.cwd(), file), path.join(process.cwd(), '.idea', file), (err) => {
               if (err) log(err)
               if (file.includes('.png') || file.includes('.jpg') || file.includes('.jpeg')) {
                 tArray.push(file)
@@ -269,7 +272,7 @@ function ideaZip (callback) {
   let date = Math.floor(new Date() / 1000)
   ideaDirName = 'Idea-' + date
   let ideaFileName = 'IdeaFile-' + date + '.zip'
-  zipper.sync.zip(path.join(__dirname, '.idea')).compress().save(path.join(__dirname, '.idea', ideaFileName))
+  zipper.sync.zip(path.join(process.cwd(), '.idea')).compress().save(path.join(process.cwd(), '.idea', ideaFileName))
   ideaFile = ideaFileName
   callback(null, ideaFileName)
 }
@@ -277,7 +280,7 @@ function ideaZip (callback) {
 // Hash Idea File
 function hashFile (callback) {
   var shasum = crypto.createHash('sha256')
-  var s = fs.ReadStream(path.join(__dirname, '.idea', ideaFile))
+  var s = fs.ReadStream(path.join(process.cwd(), '.idea', ideaFile))
   s.on('data', function (d) { shasum.update(d) })
   s.on('end', function () {
     var hash = shasum.digest('hex')
@@ -290,34 +293,35 @@ function interaction (callback) {
   log(boxen('💡💡💡   NEW IDEA   💡💡💡', { padding: 0, borderColor: 'cyan' }))
   inquirer.prompt(question)
     .then(answers => {
-      if (answers.publication === 'Public') {
-        inquirer.prompt(questionsPublic)
-          .then(answersPublic => {
+      if (answers.publication === 'Public' || answers.publication === 'Private') {
+        inquirer.prompt(questionsPublicPrivate)
+          .then(answersPublicPrivate => {
             let ideaJSON = {
-              'title': answersPublic.title,
-              'description': answersPublic.description,
-              'tags': answersPublic.tags,
-              'thumb': answersPublic.thumb,
-              'parents': answersPublic.parents,
-              'publication': 'public'
+              'title': answersPublicPrivate.title,
+              'description': answersPublicPrivate.description,
+              'tags': answersPublicPrivate.tags,
+              'thumb': answersPublicPrivate.thumb,
+              'parents': answersPublicPrivate.parents
             }
-            fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
+            if (answers.publication === 'Public') { ideaJSON.publication = 'public' }
+            if (answers.publication === 'Private') { ideaJSON.publication = 'private' }
+            fs.writeJson(path.join(process.cwd(), '.idea', 'idea.json'), ideaJSON, err => {
               if (err) log(err)
               callback(null, ideaJSON)
             })
           })
           .catch(err => log(err))
       } else {
-        inquirer.prompt(questionsPrivate)
-          .then(answersPrivate => {
+        inquirer.prompt(questionsSecret)
+          .then(answersSecret => {
             let ideaJSON = {
-              'title': answersPrivate.title,
-              'description': answersPrivate.description,
-              'tags': answersPrivate.tags,
-              'parents': answersPrivate.parents,
-              'publication': 'private'
+              'title': answersSecret.title,
+              'description': answersSecret.description,
+              'tags': answersSecret.tags,
+              'parents': answersSecret.parents,
+              'publication': 'secret'
             }
-            fs.writeJson(path.join(__dirname, '.idea', 'idea.json'), ideaJSON, err => {
+            fs.writeJson(path.join(process.cwd(), '.idea', 'idea.json'), ideaJSON, err => {
               if (err) log(err)
               callback(null, ideaJSON)
             })
@@ -333,11 +337,11 @@ function sendOut (resultsJSON) {
     indent: 5
   })
   spinner.start('  Tethering Idea to Blockchains')
-  if (resultsJSON.publication === 'public') {
-    let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
+  if (resultsJSON.publication === 'public' || resultsJSON.publication === 'private') {
+    let ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
     fs.writeJson(ideaUp, resultsJSON, err => {
       if (err) log(err)
-      const ideaFileInput = path.join(__dirname, '.idea', resultsJSON.ideaFileName)
+      const ideaFileInput = path.join(process.cwd(), '.idea', resultsJSON.ideaFileName)
       let formData = new FormData()
       formData.append('file[]', fs.createReadStream(ideaFileInput))
       formData.append('file[]', fs.createReadStream(ideaUp))
@@ -349,11 +353,13 @@ function sendOut (resultsJSON) {
         .then(res => res.json())
         .then(json => {
           spinner.stop()
+          fs.copySync(ideaUp, path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaMeta.json'))
           var output = JSON.parse(json)
           log('\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
-          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaHashes.json'), { BTC: output.BTC, LTC: output.LTC })
             .then(() => {
-              fs.remove(path.join(__dirname, '.idea'))})
+              fs.remove(path.join(process.cwd(), '.idea'))
+            })
             .then(() => {
               let table = new Table({ style: { head: [], border: [] } })
               table.push(
@@ -368,11 +374,11 @@ function sendOut (resultsJSON) {
         }).catch((err) => log(err))
     })
   } else {
-    let ideaUp = path.join(__dirname, '.idea', 'ideaUp.json')
-    let resultsPrivateJSON = {}
-    resultsPrivateJSON.hash = resultsJSON.hash
-    resultsPrivateJSON.api_token = resultsJSON.api_token
-    fs.writeJson(ideaUp, resultsPrivateJSON, err => {
+    let ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
+    let resultsSecretJSON = {}
+    resultsSecretJSON.hash = resultsJSON.hash
+    resultsSecretJSON.api_token = resultsJSON.api_token
+    fs.writeJson(ideaUp, resultsSecretJSON, err => {
       if (err) log(err)
       let formData = new FormData()
       formData.append('file', ideaUp)
@@ -384,11 +390,13 @@ function sendOut (resultsJSON) {
         .then(res => res.json())
         .then(json => {
           spinner.stop()
+          fs.copySync(ideaUp, path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaMeta.json'))
           var output = JSON.parse(json)
           log('\n\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
-          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'txHashes.json'), { BTC: output.BTC, LTC: output.LTC })
+          fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaHashes.json'), { BTC: output.BTC, LTC: output.LTC })
             .then(() => {
-              fs.remove(path.join(__dirname, '.idea'))})
+              fs.remove(path.join(process.cwd(), '.idea'))
+            })
             .then(() => {
               let table = new Table({ style: { head: [], border: [] } })
               table.push(
@@ -423,7 +431,7 @@ async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
     if (err) log(err)
     fs.ensureDir(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName))
       .then(() => {
-        fs.copy(path.join(__dirname, '.idea', results[4]), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, results[4]), { overwrite: true })
+        fs.copy(path.join(process.cwd(), '.idea', results[4]), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, results[4]), { overwrite: true })
           .then(() => {
             // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
             let resultsJSON = {}

@@ -1,11 +1,14 @@
 {
   "name": "ideablock-cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "IdeaBlock CLI client",
-  "main": "index.js",
+  "main": "ideablock.js",
+  "bin": {
+    "ideablock": "./ideablock.js"
+  },
   "scripts": {
     "test": "test",
-    "init": "node index.js"
+    "init": "node ideablock.js"
   },
   "repository": {
     "type": "git",
