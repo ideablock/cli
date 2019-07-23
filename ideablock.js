@@ -153,7 +153,7 @@ let questionsPublicPrivate = [
   {
     type: 'input',
     name: 'tags',
-    message: 'Please enter any tags you would like to add to the idea (comma- or semicolon-separated list)'
+    message: 'Please enter any tags you would like to add to the idea (comma-separated list)'
   },
   // Thumbnail
   {
