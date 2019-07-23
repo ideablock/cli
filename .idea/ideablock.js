@@ -344,7 +344,7 @@ function sendOut (resultsJSON) {
       if (err) log(err)
       const ideaFileInput = path.join(process.cwd(), '.idea', resultsJSON.ideaFileName)
       unirest.post(publicPrivateURL)
-        .header('Accept', 'application/json')
+        .accept('Accept', 'application/json')
         .attach('file', fs.createReadStream(ideaFileInput))
         .attach('file', fs.createReadStream(ideaUp))
         .end(function (response) {
@@ -379,7 +379,6 @@ function sendOut (resultsJSON) {
     fs.writeJson(ideaUp, resultsSecretJSON, err => {
       if (err) log(err)
       unirest.post(secretURL)
-        .header('Accept', 'application/json')
         .attach('file', fs.createReadStream(ideaUp))
         .end(function (response) {
           let json = response.body
