@@ -16,9 +16,9 @@ _  /    __  /  __  /
 const inquirer = require('inquirer')
 const path = require('path')
 const zipper = require('zip-local')
-const crypto = require('crypto')
 const fs = require('fs-extra')
 const async = require('async')
+const unirest = require('unirest')
 const fetch = require('node-fetch')
 const FormData = require('form-data')
 const os = require('os')
@@ -27,8 +27,9 @@ const chalk = require('chalk')
 const figlet = require('figlet')
 const ora = require('ora')
 const boxen = require('boxen')
-const publicURL = 'https://beta.ideablock.io/cli/create-idea'
-const privateURL = 'https://beta.ideablock.io/cli/create-idea-silent'
+const crypto = require('crypto')
+const publicPrivateURL = 'https://beta.ideablock.io/cli/create-idea'
+const secretURL = 'https://beta.ideablock.io/cli/create-idea-silent'
 const parentURL = 'https://beta.ideablock.io/cli/get-parent-ideas'
 const tokenURL = 'https://beta.ideablock.io/cli/update-token'
 const authFilePath = path.join(os.homedir(), '.ideablock', 'auth.json')
@@ -290,7 +291,7 @@ function hashFile (callback) {
 
 function interaction (callback) {
   log('')
-  log(boxen('💡💡💡   NEW IDEA   💡💡💡', { padding: 0, borderColor: 'cyan' }))
+  log(boxen('💡💡💡   NEW IDEA   💡💡💡', { padding: 1, borderColor: 'cyan' }))
   inquirer.prompt(question)
     .then(answers => {
       if (answers.publication === 'Public' || answers.publication === 'Private') {
@@ -342,16 +343,13 @@ function sendOut (resultsJSON) {
     fs.writeJson(ideaUp, resultsJSON, err => {
       if (err) log(err)
       const ideaFileInput = path.join(process.cwd(), '.idea', resultsJSON.ideaFileName)
-      let formData = new FormData()
-      formData.append('file[]', fs.createReadStream(ideaFileInput))
-      formData.append('file[]', fs.createReadStream(ideaUp))
-      const options = {
-        method: 'POST',
-        body: formData
-      }
-      fetch(publicURL, options)
-        .then(res => res.json())
-        .then(json => {
+      unirest.post(publicPrivateURL)
+        .accept('Accept', 'application/json')
+        .attach('file', fs.createReadStream(ideaFileInput))
+        .attach('file', fs.createReadStream(ideaUp))
+        .end(function (response) {
+          let json = response.body
+          log('response body public: ' + json)
           spinner.stop()
           fs.copySync(ideaUp, path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaMeta.json'))
           var output = JSON.parse(json)
@@ -370,8 +368,8 @@ function sendOut (resultsJSON) {
                 [chalk.blue('Idea File Location'), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName)]
               )
               console.log(table.toString())
-            })
-        }).catch((err) => log(err))
+            }).catch((err) => log(err))
+        })
     })
   } else {
     let ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
@@ -380,19 +378,15 @@ function sendOut (resultsJSON) {
     resultsSecretJSON.api_token = resultsJSON.api_token
     fs.writeJson(ideaUp, resultsSecretJSON, err => {
       if (err) log(err)
-      let formData = new FormData()
-      formData.append('file', fs.createReadStream(ideaUp))
-      const options = {
-        method: 'POST',
-        body: formData
-      }
-      fetch(privateURL, options)
-        .then(res => res.json())
-        .then(json => {
+      unirest.post(secretURL)
+        .attach('file', fs.createReadStream(ideaUp))
+        .end(function (response) {
+          let json = response.body
+          log('response body public: ' + json)
           spinner.stop()
           fs.copySync(ideaUp, path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaMeta.json'))
           var output = JSON.parse(json)
-          log('\n\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
+          log('\t✅ Congratulations! Your idea has been successfully protected using IdeaBlock!\n')
           fs.writeJSON(path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, 'ideaHashes.json'), { BTC: output.BTC, LTC: output.LTC })
             .then(() => {
               fs.remove(path.join(process.cwd(), '.idea'))
@@ -407,9 +401,8 @@ function sendOut (resultsJSON) {
                 [chalk.blue('Idea File Location'), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName)]
               )
               console.log(table.toString())
-              console.log('')
-            })
-        }).catch((err) => log(err))
+            }).catch((err) => log(err))
+        })
     })
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "ideablock-cli",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "IdeaBlock CLI client",
   "main": "ideablock.js",
   "bin": {
@@ -31,7 +31,6 @@
     "async": "^3.1.0",
     "boxen": "^4.1.0",
     "cli-table2": "^0.2.0",
-    "crypto": "^1.0.1",
     "figlet": "^1.2.3",
     "form-data": "^2.4.0",
     "fs-extra": "^8.1.0",
@@ -39,6 +38,7 @@
     "node-fetch": "^2.6.0",
     "ora": "^3.4.0",
     "path": "^0.12.7",
+    "unirest": "^0.6.0",
     "zip-local": "^0.3.4"
   }
 }
