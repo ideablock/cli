@@ -95,7 +95,7 @@ let question = [
         name: 'Private'
       },
       {
-        name: 'Silent'
+        name: 'Secret'
       }
     ]
   }
