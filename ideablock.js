@@ -75,12 +75,12 @@ const spinUp = {
     '🖥️--------------------------------💡'
   ]
 }
-let parentArray = []
+const parentArray = []
 let jsonAuthContents = {}
 let ideaDirName = ''
 let ideaFile = ''
-let tArray = ['None']
-let question = [
+const tArray = ['None']
+const question = [
   // Public or Private
   {
     type: 'list',
@@ -101,7 +101,7 @@ let question = [
   }
 ]
 
-let questionsSecret = [
+const questionsSecret = [
   // Idea Title
   {
     type: 'input',
@@ -129,7 +129,7 @@ let questionsSecret = [
   }
 ]
 
-let questionsPublicPrivate = [
+const questionsPublicPrivate = [
   // Idea Title
   {
     type: 'input',
@@ -170,7 +170,7 @@ function authorize (callback) {
   fs.pathExists(path.join(os.homedir(), '.ideablock', 'auth.json'), (err, exists) => {
     if (err) log(err)
     if (exists) {
-      let authContents = fs.readFileSync(path.join(os.homedir(), '.ideablock', 'auth.json'))
+      const authContents = fs.readFileSync(path.join(os.homedir(), '.ideablock', 'auth.json'))
       jsonAuthContents = JSON.parse(authContents)
       callback(null, jsonAuthContents.auth)
     } else {
@@ -189,35 +189,42 @@ function authorize (callback) {
           message: 'Password: '
         }
       ]
-      inquirer.prompt(loginQuestions).then(answers => {
-        const formData = new FormData()
-        formData.append('email', answers.email)
-        formData.append('password', answers.password)
-        const options = {
-          method: 'post',
-          body: formData
-        }
-        fetch(tokenURL, options)
-          .then(res => res.json())
-          .then(json => {
-            // writeAuthFile(json)
-            jsonAuthContents = JSON.parse(json)
-            fs.ensureFile(authFilePath)
-              .then(() => {
-                fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers))
-              })
-              .catch(err => {
-                console.error(err)
-              })
-          })
-      })
+      inquirer.prompt(loginQuestions)
+        .then(answers => {
+          const formData = new FormData()
+          formData.append('email', answers.email)
+          formData.append('password', answers.password)
+          const options = {
+            method: 'post',
+            body: formData
+          }
+          fetch(tokenURL, options)
+            .then(res => {
+              if (res.status === 500) {
+                res.json()
+                  .then((obj) => {
+                    log(chalk.red('\nWe cannot seem to find an IdeaBlock account with those credentials.'))
+                    log(chalk.red('Please visit https://beta.ideablock.io to register.\n'))
+                    process.exit(0)
+                  })
+              } else if (res.status === 200) {
+                res.json()
+                  .then(json => {
+                    jsonAuthContents = JSON.parse(json)
+                    fs.ensureFile(authFilePath)
+                      .then(() => fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers)))
+                  })
+                  .catch((err) => console.log(err))
+              }
+            })
+        })
     }
   })
 }
 
 function parents (callback) {
-  let authJson = fs.readJsonSync(authFilePath)
-  let fD = new FormData
+  const authJson = fs.readJsonSync(authFilePath)
+  const fD = new FormData
   fD.append('api_token', authJson.auth)
   fetch(parentURL, { method: 'post', body: fD })
     .then(res => res.json())
@@ -269,9 +276,9 @@ function copyFiles (callback) {
 
 // Zip array of files
 function ideaZip (callback) {
-  let date = Math.floor(new Date() / 1000)
+  const date = Math.floor(new Date() / 1000)
   ideaDirName = 'Idea-' + date
-  let ideaFileName = 'IdeaFile-' + date + '.zip'
+  const ideaFileName = 'IdeaFile-' + date + '.zip'
   zipper.sync.zip(path.join(process.cwd(), '.idea')).compress().save(path.join(process.cwd(), '.idea', ideaFileName))
   ideaFile = ideaFileName
   callback(null, ideaFileName)
@@ -296,7 +303,7 @@ function interaction (callback) {
       if (answers.publication === 'Public' || answers.publication === 'Private') {
         inquirer.prompt(questionsPublicPrivate)
           .then(answersPublicPrivate => {
-            let ideaJSON = {
+            const ideaJSON = {
               'title': answersPublicPrivate.title,
               'description': answersPublicPrivate.description,
               'tags': answersPublicPrivate.tags,
@@ -314,7 +321,7 @@ function interaction (callback) {
       } else {
         inquirer.prompt(questionsSecret)
           .then(answersSecret => {
-            let ideaJSON = {
+            const ideaJSON = {
               'title': answersSecret.title,
               'description': answersSecret.description,
               'tags': answersSecret.tags,
@@ -338,11 +345,11 @@ function sendOut (resultsJSON) {
   })
   spinner.start('  Tethering Idea to Blockchains')
   if (resultsJSON.publication === 'public' || resultsJSON.publication === 'private') {
-    let ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
+    const ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
     fs.writeJson(ideaUp, resultsJSON, err => {
       if (err) log(err)
       const ideaFileInput = path.join(process.cwd(), '.idea', resultsJSON.ideaFileName)
-      let formData = new FormData()
+      const formData = new FormData()
       formData.append('file[]', fs.createReadStream(ideaFileInput))
       formData.append('file[]', fs.createReadStream(ideaUp))
       const options = {
@@ -361,7 +368,7 @@ function sendOut (resultsJSON) {
               fs.remove(path.join(process.cwd(), '.idea'))
             })
             .then(() => {
-              let table = new Table({ style: { head: [], border: [] } })
+              const table = new Table({ style: { head: [], border: [] } })
               table.push(
                 [{ colSpan: 2, content: chalk.bold.red('Idea Information:') }],
                 [chalk.white('Idea File Hash: '), resultsJSON.hash],
@@ -374,13 +381,13 @@ function sendOut (resultsJSON) {
         }).catch((err) => log(err))
     })
   } else {
-    let ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
-    let resultsSecretJSON = {}
+    const ideaUp = path.join(process.cwd(), '.idea', 'ideaUp.json')
+    const resultsSecretJSON = {}
     resultsSecretJSON.hash = resultsJSON.hash
     resultsSecretJSON.api_token = resultsJSON.api_token
     fs.writeJson(ideaUp, resultsSecretJSON, err => {
       if (err) log(err)
-      let formData = new FormData()
+      const formData = new FormData()
       formData.append('file', fs.createReadStream(ideaUp))
       const options = {
         method: 'POST',
@@ -398,7 +405,7 @@ function sendOut (resultsJSON) {
               fs.remove(path.join(process.cwd(), '.idea'))
             })
             .then(() => {
-              let table = new Table({ style: { head: [], border: [] } })
+              const table = new Table({ style: { head: [], border: [] } })
               table.push(
                 [{ colSpan: 2, content: chalk.bold.red('Idea Information:') }],
                 [chalk.white('Idea File Hash: '), resultsJSON.hash],
@@ -434,8 +441,8 @@ async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
         fs.copy(path.join(process.cwd(), '.idea', results[4]), path.join(os.homedir(), '.ideablock', 'ideas', ideaDirName, results[4]), { overwrite: true })
           .then(() => {
             // results is now = [choiceArray, 'foo', fileArray, ideaJSON, ideaFileName, hash]
-            let resultsJSON = {}
-            let interaction = results[3]
+            const resultsJSON = {}
+            const interaction = results[3]
             resultsJSON.hash = results[5]
             resultsJSON.ideaFileName = results[4]
             resultsJSON.publication = interaction.publication

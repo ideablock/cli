@@ -7,7 +7,6 @@
     "ideablock": "./ideablock.js"
   },
   "scripts": {
-    "test": "test",
     "init": "node ideablock.js"
   },
   "repository": {
