@@ -165,8 +165,7 @@ const questionsPublicPrivate = [
 ]
 
 // Subroutines
-function authorize (callback) {
-  banner()
+const authorize = function (callback) {
   fs.pathExists(path.join(os.homedir(), '.ideablock', 'auth.json'), (err, exists) => {
     if (err) log(err)
     if (exists) {
@@ -174,8 +173,6 @@ function authorize (callback) {
       jsonAuthContents = JSON.parse(authContents)
       callback(null, jsonAuthContents.auth)
     } else {
-      log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
-      log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
       const loginQuestions = [
         {
           type: 'input',
@@ -207,18 +204,23 @@ function authorize (callback) {
                     log(chalk.red('Please visit https://beta.ideablock.io to register.\n'))
                     process.exit(0)
                   })
-		  .catch((err) => {
-		    console.log(chalk.bold.red('\tWe cannot find an IdeaBlock account with those credentials.\n\tPlease visit https://beta.ideablock.io to register.\n'))
-		    process.exit(0)
-		  })
+                  .catch((err) => {
+                    console.log(chalk.red('\nWe cannot find an IdeaBlock account with those credentials.\nPlease visit https://beta.ideablock.io to register.\n'))
+                    process.exit(0)
+                  })
               } else if (res.status === 200) {
                 res.json()
-                  .then(json => {
-                    jsonAuthContents = JSON.parse(json)
+                  .then(obj => {
+                    jsonAuthContents = JSON.parse(obj)
                     fs.ensureFile(authFilePath)
-                      .then(() => fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers)))                  
-		})
-                  .catch((err) => console.log(err))
+                      .then(() => fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers)))
+                      .catch((err) => console.log(err))
+                  })
+                  .catch((err) => {
+                    log(chalk.red('\nIncorrect password, please try again.'))
+                    log(chalk.red('Please visit https://beta.ideablock.io to register.\n'))
+                    authorize()
+                  })
               }
             })
         })
@@ -434,9 +436,12 @@ function banner () {
     horizontalLayout: 'default',
     verticalLayout: 'default'
   }))
+  log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
+  log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
 }
 
 // Execution
+banner()
 async.series([authorize, parents, copyFiles, interaction, ideaZip, hashFile],
   function (err, results) {
     if (err) log(err)
