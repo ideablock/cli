@@ -207,13 +207,17 @@ function authorize (callback) {
                     log(chalk.red('Please visit https://beta.ideablock.io to register.\n'))
                     process.exit(0)
                   })
+		  .catch((err) => {
+		    console.log(chalk.bold.red('\tWe cannot find an IdeaBlock account with those credentials.\n\tPlease visit https://beta.ideablock.io to register.\n'))
+		    process.exit(0)
+		  })
               } else if (res.status === 200) {
                 res.json()
                   .then(json => {
                     jsonAuthContents = JSON.parse(json)
                     fs.ensureFile(authFilePath)
-                      .then(() => fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers)))
-                  })
+                      .then(() => fs.writeJson(authFilePath, jsonAuthContents, () => callback(null, answers)))                  
+		})
                   .catch((err) => console.log(err))
               }
             })
