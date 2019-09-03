@@ -173,6 +173,8 @@ const authorize = function (callback) {
       jsonAuthContents = JSON.parse(authContents)
       callback(null, jsonAuthContents.auth)
     } else {
+      log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
+      log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
       const loginQuestions = [
         {
           type: 'input',
@@ -436,8 +438,6 @@ function banner () {
     horizontalLayout: 'default',
     verticalLayout: 'default'
   }))
-  log(chalk.bold.rgb(255, 216, 100)('Please login with your IdeaBlock credentials.'))
-  log(chalk.rgb(255, 216, 100)('(You can sign up at https://beta.ideablock.io)\n'))
 }
 
 // Execution
