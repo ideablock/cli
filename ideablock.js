@@ -219,9 +219,7 @@ const authorize = function (callback) {
                       .catch((err) => console.log(err))
                   })
                   .catch((err) => {
-                    log(chalk.red('\nIncorrect password, please try again.'))
-                    log(chalk.red('Please visit https://beta.ideablock.io to register.\n'))
-                    authorize()
+                    log(chalk.red('\nIncorrect password, please try again.\n'))
                   })
               }
             })
