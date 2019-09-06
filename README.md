@@ -13,14 +13,17 @@ $ npm i -g ideablock-cli
 ```
 
 # Usage
-IdeaBlock CLI bundles the current version of all files in the current working directory and assumes that the directory is flat (in other words, files in subdirectories are not included in the idea upload).
+IdeaBlock CLI bundles the current version of all files in the current working directory and adds it to IdeaBlock as a new idea.
+- Select "public" to make the idea public to instantly create immutable prior art
+- Select "private" to keep the idea files private until you choose to make them public immutable prior art.
+- Select "secret" to protect a trade secret - Your computer does a little bit of crypto magic to create a hash of the idea.  You keep the files, send IdeaBlock the hash, we take care of the rest.
 
 ```bash
 $ cd /path/to/dir/with/idea/files/
 $ ideablock init
 ```
 
-The current version v1.0.1 requires a flat file structure for the idea.  In other words, any subdirectories and subdirectory files under the directory from which `ideablock init` is called will be ignored.
+The current version requires a flat file structure for the idea.  In other words, any subdirectories and subdirectory files under the directory from which `ideablock init` is called will be ignored.
 
 # Beta
 **Please be aware that this is beta software. Accordingly, the software will be frequently updated with bug fixes, sometimes without prior announcement.**
