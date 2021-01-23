@@ -431,7 +431,7 @@ function sendOut (resultsJSON) {
 
 function banner () {
   log('\n')
-  log(figlet.textSync('Ideablock CLI', {
+  log(figlet.textSync('IdeaBlock', {
     font: 'Slant',
     horizontalLayout: 'default',
     verticalLayout: 'default'
