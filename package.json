@@ -1,6 +1,6 @@
 {
   "name": "ideablock-cli",
-  "version": "1.2",
+  "version": "1.2.0",
   "description": "Ideablock CLI client",
   "main": "ideablock.js",
   "bin": {
